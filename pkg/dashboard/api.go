@@ -61,6 +61,7 @@ func NewAPI(ctx context.Context, sysNamespace string, cachedReader client.Reader
 
 func (api *API) Handle(group *gin.RouterGroup) {
 	group.GET("/debug/status", api.debugAPIStatus())
+	group.GET("/namespaces", api.listNSsHandler())
 	group.GET("/pods", api.listAppPod())
 	group.GET("/syspods", api.listSysPod())
 	group.GET("/mountpods", api.listMountPod())
