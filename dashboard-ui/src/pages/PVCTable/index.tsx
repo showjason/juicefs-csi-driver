@@ -14,9 +14,8 @@
  limitations under the License.
  */
 
-import { QueryItem } from '@/components/QueryContent';
+import QueryItem from '@/components/QueryContent';
 import { PVStatusEnum } from '@/services/common';
-import { listNamespace } from '@/services/namespace';
 import { PVC, listPVC } from '@/services/pv';
 import { AlertTwoTone } from '@ant-design/icons';
 import {
@@ -26,24 +25,13 @@ import {
     ProTable,
 } from '@ant-design/pro-components';
 import { Button, Tooltip } from 'antd';
-import { Namespace } from 'kubernetes-types/core/v1';
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useRef, useState } from 'react';
 import { FormattedMessage, Link } from 'umi';
 
 const PVCTable: React.FC<unknown> = () => {
     const [, handleModalVisible] = useState<boolean>(false);
     const actionRef = useRef<ActionType>();
     const [, setSelectedRows] = useState<PVC[]>([]);
-    const [namespaces, setNamespaces] = useState<Namespace[]>([]);
-    const queryNamespaces = async () => {
-        const { data, success } = await listNamespace();
-        if (success) {
-            setNamespaces(data);
-        }
-    };
-    useEffect(() => {
-        queryNamespaces();
-    }, []);
     const accessModeMap: { [key: string]: string } = {
         ReadWriteOnce: 'RWO',
         ReadWriteMany: 'RWM',
@@ -88,7 +76,7 @@ const PVCTable: React.FC<unknown> = () => {
                 );
             },
         },
-        QueryItem(namespaces, queryNamespaces),
+        QueryItem(),
         {
             title: <FormattedMessage id="namespace" />,
             key: 'namespace',

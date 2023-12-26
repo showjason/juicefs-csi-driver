@@ -1,14 +1,24 @@
+import { listNamespace } from '@/services/namespace';
 import { useDebounceFn } from '@ant-design/pro-components';
 import { AutoComplete } from 'antd';
 import { Namespace } from 'kubernetes-types/core/v1';
+import { useEffect, useState } from 'react';
 import { FormattedMessage } from 'umi';
 
-export const QueryItem = (
-    namespaces: Namespace[],
-    query: () => Promise<void>,
-) => {
-    const { run: debouncedQuery } = useDebounceFn(query, 500);
+function QueryItem() {
+    const [namespaces, setNamespaces] = useState<Namespace[]>([]);
+    const queryNamespaces = async () => {
+        const { data, success } = await listNamespace();
+        if (success) {
+            setNamespaces(data);
+        }
+    };
+    const { run: debouncedQuery } = useDebounceFn(queryNamespaces, 500);
     const placeholer = <FormattedMessage id="pleaseEnter" />;
+    useEffect(() => {
+        queryNamespaces();
+    }, []);
+
     return {
         title: <FormattedMessage id="namespace" />,
         key: 'searchNamespace',
@@ -31,6 +41,6 @@ export const QueryItem = (
             );
         },
     };
-};
+}
 
-// export default queryItem
+export default QueryItem;
