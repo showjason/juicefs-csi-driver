@@ -128,6 +128,9 @@ export const listPVC = async (args: PVCPagingListArgs) => {
             `${host}/api/v1/pvcs?order=${order}&namespace=${namespace}&name=${name}&pv=${pv}&sc=${sc}&pageSize=${pageSize}&current=${current}`,
         );
         data = JSON.parse(await rawPVC.text());
+        console.log('------------------');
+        console.log(data);
+        console.log('------------------');
     } catch (e) {
         console.log(`fail to list pvc`);
         return { data: null, success: false };

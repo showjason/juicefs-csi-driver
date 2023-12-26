@@ -231,6 +231,7 @@ func (api *API) listPVCsHandler() gin.HandlerFunc {
 			var pvc corev1.PersistentVolumeClaim
 			if err := api.cachedReader.Get(c, name, &pvc); err == nil && required(&pvc) {
 				pvcs = append(pvcs, &pvc)
+				klog.V(6).Infof("pvc is: %s\n", &pvc)
 			}
 		}
 		result := &ListPVCPodResult{len(pvcs), make([]*corev1.PersistentVolumeClaim, 0)}
