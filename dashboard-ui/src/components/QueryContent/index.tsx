@@ -22,11 +22,13 @@ function QueryItem() {
     return {
         title: <FormattedMessage id="namespace" />,
         key: 'searchNamespace',
-        dataIndex: ['metadata', 'name'],
         hideInTable: true,
+        valueType: Text,
         renderFormItem: () => {
             return (
                 <AutoComplete
+                    backfill={true}
+                    autoFocus={true}
                     options={namespaces.map((ns) => ({
                         value: ns.metadata?.name,
                     }))}
