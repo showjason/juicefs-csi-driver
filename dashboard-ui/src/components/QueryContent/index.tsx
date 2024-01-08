@@ -23,7 +23,6 @@ function QueryItem() {
         title: <FormattedMessage id="namespace" />,
         key: 'searchNamespace',
         hideInTable: true,
-        valueType: Text,
         renderFormItem: () => {
             return (
                 <AutoComplete
