@@ -13,21 +13,20 @@
 # limitations under the License.
 
 FROM golang:1.21 AS builder
-ARG TARGETARCH=amd64
-ARG VERSION=$(git describe --tags --match 'v*' --always --dirty)
-ARG BUILD_DATE=$(date -u +"%Y-%m-%dT%H:%M:%SZ")
-ARG GIT_COMMIT=$(git rev-parse HEAD)
-ARG PKG=github.com/juicedata/juicefs-csi-driver
-ARG LDFLAGS="-X ${PKG}/pkg/driver.driverVersion=${VERSION} -X ${PKG}/pkg/driver.gitCommit=${GIT_COMMIT} -X ${PKG}/pkg/driver.buildDate=${BUILD_DATE} -s -w"
+# ARG TARGETARCH=amd64
+# ARG VERSION=$(git describe --tags --match 'v*' --always --dirty)
+# ARG BUILD_DATE=$(date -u +"%Y-%m-%dT%H:%M:%SZ")
+# ARG GIT_COMMIT=$(git rev-parse HEAD)
+# ARG PKG=github.com/juicedata/juicefs-csi-driver
+# ARG LDFLAGS="-X ${PKG}/pkg/driver.driverVersion=${VERSION} -X ${PKG}/pkg/driver.gitCommit=${GIT_COMMIT} -X ${PKG}/pkg/driver.buildDate=${BUILD_DATE} -s -w"
 WORKDIR /app
 # COPY go.mod go.sum /app/
-
 COPY . /app/
 RUN go mod download
-# ENV VERSION=v0.14.1-344-g87fb2de-dirty
-# ENV BUILD_DATE=2024-01-27T08:00:31Z
-# ENV GIT_COMMIT=87fb2dee7b55f0856843664b1fc234b8a3e19b3b
-# ENV LDFLAGS="-X ${PKG}/pkg/driver.driverVersion=${VERSION} -X ${PKG}/pkg/driver.gitCommit=${GIT_COMMIT} -X ${PKG}/pkg/driver.buildDate=${BUILD_DATE} -s -w"
+ENV VERSION=v0.14.1-344-g87fb2de-dirty
+ENV BUILD_DATE=2024-01-27T08:00:31Z
+ENV GIT_COMMIT=87fb2dee7b55f0856843664b1fc234b8a3e19b3b
+ENV LDFLAGS="-X ${PKG}/pkg/driver.driverVersion=${VERSION} -X ${PKG}/pkg/driver.gitCommit=${GIT_COMMIT} -X ${PKG}/pkg/driver.buildDate=${BUILD_DATE} -s -w"
 
 RUN CGO_ENABLED=0 GOOS=linux go build -ldflags "${LDFLAGS}"
 
