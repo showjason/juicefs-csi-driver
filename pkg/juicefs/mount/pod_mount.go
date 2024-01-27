@@ -430,7 +430,7 @@ func (p *PodMount) waitUtilMountReady(ctx context.Context, jfsSetting *jfsConfig
 
 func (p *PodMount) waitUtilJobCompleted(ctx context.Context, jobName string) error {
 	// Wait until the job is completed
-	waitCtx, waitCancel := context.WithTimeout(ctx, 40*time.Second)
+	waitCtx, waitCancel := context.WithTimeout(ctx, 50*time.Second)
 	defer waitCancel()
 	for {
 		job, err := p.K8sClient.GetJob(waitCtx, jobName, jfsConfig.Namespace)
@@ -440,6 +440,7 @@ func (p *PodMount) waitUtilJobCompleted(ctx context.Context, jobName string) err
 				return nil
 			}
 			if waitCtx.Err() == context.DeadlineExceeded || waitCtx.Err() == context.Canceled {
+				klog.V(6).Infof("wait context error: %s", waitCtx.Err())
 				klog.V(6).Infof("job %s timeout", jobName)
 				break
 			}
