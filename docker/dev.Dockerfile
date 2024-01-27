@@ -20,7 +20,7 @@ ARG GIT_COMMIT=$(shell git rev-parse HEAD)
 ARG PKG=github.com/juicedata/juicefs-csi-driver
 ARG LDFLAGS="-X ${PKG}/pkg/driver.driverVersion=${VERSION} -X ${PKG}/pkg/driver.gitCommit=${GIT_COMMIT} -X ${PKG}/pkg/driver.buildDate=${BUILD_DATE} -s -w" 
 
-COPY . .
+COPY ../. .
 RUN mkdir -p bin && CGO_ENABLED=0 GOOS=linux go build -ldflags ${LDFLAGS} -o bin/juicefs-csi-driver ./cmd/
 
 
