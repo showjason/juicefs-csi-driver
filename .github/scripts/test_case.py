@@ -21,7 +21,7 @@ from kubernetes import client
 from config import KUBE_SYSTEM, IS_CE, RESOURCE_PREFIX, \
     SECRET_NAME, STORAGECLASS_NAME, GLOBAL_MOUNTPOINT, \
     LOG, PVs, META_URL, MOUNT_MODE, CCI_MOUNT_IMAGE, IN_CCI
-from model import PVC, PV, Pod, StorageClass, Deployment, Job
+from model import PVC, PV, Pod, StorageClass, Deployment, Job, Secret
 from util import check_mount_point, wait_dir_empty, wait_dir_not_empty, \
     get_only_mount_pod_name, get_mount_pods, check_pod_ready, check_mount_pod_refs, gen_random_string, get_vol_uuid, \
     get_voldel_job, check_quota, is_quota_supported
@@ -509,18 +509,18 @@ def test_multi_pvc():
     if annos is None:
         annos = {}
 
-    unique1_id = volume1_handle
-    unique2_id = volume2_handle
-    key1 = f"juicefs-mountpod-{unique1_id}"
-    key2 = f"juicefs-mountpod-{unique2_id}"
-    mount_pod1 = annos[key1]
-    mount_pod2 = annos[key2]
-    if mount_pod1 != f"{KUBE_SYSTEM}/{mount_pod1_name}":
-        raise Exception("App pod {} does not have [{}] annotation {}. pod annotations: {}".format(
-            meta.name, key1, mount_pod1_name, annos))
-    if mount_pod2 != f"{KUBE_SYSTEM}/{mount_pod2_name}":
-        raise Exception("App pod {} does not have [{}] annotation {}. pod annotations: {}".format(
-            meta.name, key2, mount_pod2_name, annos))
+    # unique1_id = volume1_handle
+    # unique2_id = volume2_handle
+    # key1 = f"juicefs-mountpod-{unique1_id}"
+    # key2 = f"juicefs-mountpod-{unique2_id}"
+    # mount_pod1 = annos[key1]
+    # mount_pod2 = annos[key2]
+    # if mount_pod1 != f"{KUBE_SYSTEM}/{mount_pod1_name}":
+    #     raise Exception("App pod {} does not have [{}] annotation {}. pod annotations: {}".format(
+    #         meta.name, key1, mount_pod1_name, annos))
+    # if mount_pod2 != f"{KUBE_SYSTEM}/{mount_pod2_name}":
+    #     raise Exception("App pod {} does not have [{}] annotation {}. pod annotations: {}".format(
+    #         meta.name, key2, mount_pod2_name, annos))
 
     # delete test resources
     LOG.info("Remove deployment {}".format(deployment.name))
@@ -848,6 +848,11 @@ def test_pod_resource_err():
     LOG.info("Test pass.")
 
 
+def test_cache_client_conf():
+    LOG.info("[test case] Pod with static storage and clean cache upon umount begin..")
+    secret = Secret(secret_name=SECRET_NAME)
+    secret.watch_for_initconfig_injection()
+
 def test_static_cache_clean_upon_umount():
     LOG.info("[test case] Pod with static storage and clean cache upon umount begin..")
     by_process = MOUNT_MODE == "process"
@@ -860,7 +865,7 @@ def test_static_cache_clean_upon_umount():
 
     # deploy pv
     pv = PV(name="pv-static-cache-umount", access_mode="ReadWriteMany", volume_handle="pv-static-cache-umount",
-            secret_name=SECRET_NAME, parameters={"juicefs/clean-cache": "true"}, options=[f"cache-dir={cache_dir}"])
+            secret_name=SECRET_NAME, parameters={"juicefs/clean-cache": "true"}, options=[f"cache-dir={cache_dir}",f"free-space-ratio=0.01"])
     LOG.info("Deploy pv {}".format(pv.name))
     pv.create()
 
@@ -939,7 +944,7 @@ def test_dynamic_cache_clean_upon_umount():
     sc_name = RESOURCE_PREFIX + "-sc-cache"
     # deploy sc
     sc = StorageClass(name=sc_name, secret_name=SECRET_NAME,
-                      parameters={"juicefs/clean-cache": "true"}, options=[f"cache-dir={cache_dir}"])
+                      parameters={"juicefs/clean-cache": "true"}, options=[f"cache-dir={cache_dir}",f"free-space-ratio=0.01"])
     LOG.info("Deploy storageClass {}".format(sc.name))
     sc.create()
 

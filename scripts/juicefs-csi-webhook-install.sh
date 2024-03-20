@@ -252,6 +252,8 @@ rules:
   - secrets
   verbs:
   - get
+  - list
+  - watch
   - create
   - update
   - patch
@@ -467,7 +469,7 @@ spec:
           valueFrom:
             fieldRef:
               fieldPath: metadata.namespace
-        image: juicedata/csi-dashboard:v0.23.2
+        image: juicedata/csi-dashboard:v0.23.5
         name: dashboard
         ports:
         - containerPort: 8088
@@ -518,6 +520,7 @@ spec:
         - --leader-election
         - --v=5
         - --webhook=true
+        - --validating-webhook=true
         env:
         - name: CSI_ENDPOINT
           value: unix:///var/lib/csi/sockets/pluginproxy/csi.sock
@@ -537,7 +540,7 @@ spec:
           value: /var/lib/juicefs/volume
         - name: JUICEFS_CONFIG_PATH
           value: /var/lib/juicefs/config
-        image: juicedata/juicefs-csi-driver:v0.23.2
+        image: juicedata/juicefs-csi-driver:v0.23.5
         livenessProbe:
           failureThreshold: 5
           httpGet:
@@ -715,6 +718,42 @@ webhooks:
     - pods
   sideEffects: None
   timeoutSeconds: 20
+---
+apiVersion: admissionregistration.k8s.io/v1
+kind: ValidatingWebhookConfiguration
+metadata:
+  labels:
+    app.kubernetes.io/instance: juicefs-csi-driver
+    app.kubernetes.io/name: juicefs-csi-driver
+    app.kubernetes.io/version: master
+  name: juicefs-admission-webhook
+webhooks:
+- admissionReviewVersions:
+  - v1
+  clientConfig:
+    caBundle: CA_BUNDLE
+    service:
+      name: juicefs-admission-webhook
+      namespace: kube-system
+      path: /juicefs/validate-secret
+  failurePolicy: Ignore
+  matchPolicy: Equivalent
+  name: validate.secret.juicefs.com
+  objectSelector:
+    matchLabels:
+      juicefs.com/validate-secret: "true"
+  rules:
+  - apiGroups:
+    - ""
+    apiVersions:
+    - v1
+    operations:
+    - CREATE
+    - UPDATE
+    resources:
+    - secrets
+  sideEffects: None
+  timeoutSeconds: 5
 EOF
   # webhook.yaml end
 
@@ -908,6 +947,8 @@ rules:
   - secrets
   verbs:
   - get
+  - list
+  - watch
   - create
   - update
   - patch
@@ -1095,7 +1136,7 @@ spec:
           valueFrom:
             fieldRef:
               fieldPath: metadata.namespace
-        image: juicedata/csi-dashboard:v0.23.2
+        image: juicedata/csi-dashboard:v0.23.5
         name: dashboard
         ports:
         - containerPort: 8088
@@ -1146,6 +1187,7 @@ spec:
         - --leader-election
         - --v=5
         - --webhook=true
+        - --validating-webhook=true
         env:
         - name: CSI_ENDPOINT
           value: unix:///var/lib/csi/sockets/pluginproxy/csi.sock
@@ -1165,7 +1207,7 @@ spec:
           value: /var/lib/juicefs/volume
         - name: JUICEFS_CONFIG_PATH
           value: /var/lib/juicefs/config
-        image: juicedata/juicefs-csi-driver:v0.23.2
+        image: juicedata/juicefs-csi-driver:v0.23.5
         livenessProbe:
           failureThreshold: 5
           httpGet:
@@ -1368,6 +1410,44 @@ webhooks:
     - pods
   sideEffects: None
   timeoutSeconds: 20
+---
+apiVersion: admissionregistration.k8s.io/v1
+kind: ValidatingWebhookConfiguration
+metadata:
+  annotations:
+    cert-manager.io/inject-ca-from: kube-system/juicefs-cert
+  labels:
+    app.kubernetes.io/instance: juicefs-csi-driver
+    app.kubernetes.io/name: juicefs-csi-driver
+    app.kubernetes.io/version: master
+  name: juicefs-admission-webhook
+webhooks:
+- admissionReviewVersions:
+  - v1
+  clientConfig:
+    caBundle: CA_BUNDLE
+    service:
+      name: juicefs-admission-webhook
+      namespace: kube-system
+      path: /juicefs/validate-secret
+  failurePolicy: Ignore
+  matchPolicy: Equivalent
+  name: validate.secret.juicefs.com
+  objectSelector:
+    matchLabels:
+      juicefs.com/validate-secret: "true"
+  rules:
+  - apiGroups:
+    - ""
+    apiVersions:
+    - v1
+    operations:
+    - CREATE
+    - UPDATE
+    resources:
+    - secrets
+  sideEffects: None
+  timeoutSeconds: 5
 EOF
   # webhook-with-certmanager.yaml end
 

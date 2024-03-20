@@ -18,32 +18,40 @@ package config
 
 import (
 	"hash/fnv"
+	"os"
+	"strconv"
 	"sync"
 	"time"
+
+	"k8s.io/klog"
 
 	corev1 "k8s.io/api/core/v1"
 )
 
 var (
-	ByProcess          = false // csi driver runs juicefs in process or not
-	FormatInPod        = false // put format/auth in pod (only in k8s)
-	Provisioner        = false // provisioner in controller
-	MountManager       = false // manage mount pod in controller (only in k8s)
-	Webhook            = false // inject juicefs client as sidecar in pod (only in k8s)
-	Immutable          = false // csi driver is running in an immutable environment
-	EnableNodeSelector = false // arrange mount pod to node with node selector instead nodeName
+	WebPort            = MustGetWebPort() // web port used by metrics
+	ByProcess          = false            // csi driver runs juicefs in process or not
+	FormatInPod        = false            // put format/auth in pod (only in k8s)
+	Provisioner        = false            // provisioner in controller
+	CacheClientConf    = false            // cache client config files and use directly in mount containers
+	MountManager       = false            // manage mount pod in controller (only in k8s)
+	Webhook            = false            // inject juicefs client as sidecar in pod (only in k8s)
+	ValidatingWebhook  = false            // start validating webhook, applicable to ee only
+	Immutable          = false            // csi driver is running in an immutable environment
+	EnableNodeSelector = false            // arrange mount pod to node with node selector instead nodeName
 
-	DriverName         = "csi.juicefs.com"
-	NodeName           = ""
-	Namespace          = ""
-	PodName            = ""
-	CEMountImage       = "juicedata/mount:ce-nightly" // mount pod ce image
-	EEMountImage       = "juicedata/mount:ee-nightly" // mount pod ee image
-	MountLabels        = ""
-	HostIp             = ""
-	KubeletPort        = ""
-	ReconcileTimeout   = 5 * time.Minute
-	ReconcilerInterval = 5
+	DriverName               = "csi.juicefs.com"
+	NodeName                 = ""
+	Namespace                = ""
+	PodName                  = ""
+	CEMountImage             = "juicedata/mount:ce-nightly" // mount pod ce image
+	EEMountImage             = "juicedata/mount:ee-nightly" // mount pod ee image
+	MountLabels              = ""
+	HostIp                   = ""
+	KubeletPort              = ""
+	ReconcileTimeout         = 5 * time.Minute
+	ReconcilerInterval       = 5
+	SecretReconcilerInterval = 1 * time.Hour
 
 	CSIPod = corev1.Pod{}
 
@@ -52,14 +60,16 @@ var (
 	JFSMountPriorityName     = "system-node-critical"
 	JFSMountPreemptionPolicy = ""
 
-	TmpPodMountBase = "/tmp"
-	PodMountBase    = "/jfs"
-	MountBase       = "/var/lib/jfs"
-	FsType          = "juicefs"
-	CliPath         = "/usr/bin/juicefs"
-	CeCliPath       = "/usr/local/bin/juicefs"
-	CeMountPath     = "/bin/mount.juicefs"
-	JfsMountPath    = "/sbin/mount.juicefs"
+	TmpPodMountBase       = "/tmp"
+	PodMountBase          = "/jfs"
+	MountBase             = "/var/lib/jfs"
+	FsType                = "juicefs"
+	CliPath               = "/usr/bin/juicefs"
+	CeCliPath             = "/usr/local/bin/juicefs"
+	CeMountPath           = "/bin/mount.juicefs"
+	JfsMountPath          = "/sbin/mount.juicefs"
+	DefaultClientConfPath = "/root/.juicefs"
+	ROConfPath            = "/etc/juicefs"
 )
 
 const (
@@ -75,7 +85,6 @@ const (
 	UniqueId             = "juicefs-uniqueid"
 	CleanCache           = "juicefs-clean-cache"
 	MountContainerName   = "jfs-mount"
-	JuiceFSMountPod      = "juicefs-mountpod"
 	JobTypeValue         = "juicefs-job"
 	JfsInsideContainer   = "JFS_INSIDE_CONTAINER"
 
@@ -130,4 +139,16 @@ func GetPodLock(podName string) *sync.Mutex {
 	h.Write([]byte(podName))
 	index := int(h.Sum32())
 	return &PodLocks[index%1024]
+}
+
+func MustGetWebPort() int {
+	value, exists := os.LookupEnv("JUICEFS_CSI_WEB_PORT")
+	if exists {
+		port, err := strconv.Atoi(value)
+		if err == nil {
+			return port
+		}
+		klog.Errorf("Fail to parse JUICEFS_CSI_WEB_PORT %s: %v", value, err)
+	}
+	return 8080
 }

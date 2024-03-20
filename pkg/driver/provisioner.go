@@ -35,6 +35,7 @@ import (
 	"github.com/juicedata/juicefs-csi-driver/pkg/juicefs"
 	k8s "github.com/juicedata/juicefs-csi-driver/pkg/k8sclient"
 	"github.com/juicedata/juicefs-csi-driver/pkg/util"
+	"github.com/prometheus/client_golang/prometheus"
 )
 
 type provisionerService struct {
@@ -43,20 +44,37 @@ type provisionerService struct {
 	leaderElection              bool
 	leaderElectionNamespace     string
 	leaderElectionLeaseDuration time.Duration
+	metrics                     *provisionerMetrics
+}
+
+type provisionerMetrics struct {
+	provisionErrors prometheus.Counter
+}
+
+func newProvisionerMetrics(reg prometheus.Registerer) *provisionerMetrics {
+	metrics := &provisionerMetrics{}
+	metrics.provisionErrors = prometheus.NewCounter(prometheus.CounterOpts{
+		Name: "provision_errors",
+		Help: "number of provision errors",
+	})
+	reg.MustRegister(metrics.provisionErrors)
+	return metrics
 }
 
 func newProvisionerService(k8sClient *k8s.K8sClient, leaderElection bool,
-	leaderElectionNamespace string, leaderElectionLeaseDuration time.Duration) (provisionerService, error) {
+	leaderElectionNamespace string, leaderElectionLeaseDuration time.Duration, reg prometheus.Registerer) (provisionerService, error) {
 	jfs := juicefs.NewJfsProvider(nil, k8sClient)
 	if leaderElectionNamespace == "" {
 		leaderElectionNamespace = config.Namespace
 	}
+	metrics := newProvisionerMetrics(reg)
 	return provisionerService{
 		juicefs:                     jfs,
 		K8sClient:                   k8sClient,
 		leaderElection:              leaderElection,
 		leaderElectionNamespace:     leaderElectionNamespace,
 		leaderElectionLeaseDuration: leaderElectionLeaseDuration,
+		metrics:                     metrics,
 	}, nil
 }
 
@@ -86,14 +104,27 @@ func (j *provisionerService) Provision(ctx context.Context, options provisioncon
 	}
 
 	pvMeta := util.NewObjectMeta(*options.PVC, options.SelectedNode)
-	subPath := options.PVName
-	if options.StorageClass.Parameters["pathPattern"] != "" {
-		subPath = pvMeta.StringParser(options.StorageClass.Parameters["pathPattern"])
+
+	pvName := options.PVName
+	scParams := make(map[string]string)
+	for k, v := range options.StorageClass.Parameters {
+		if strings.HasPrefix(k, "csi.storage.k8s.io/") {
+			scParams[k] = pvMeta.ResolveSecret(v, pvName)
+		} else {
+			scParams[k] = pvMeta.StringParser(options.StorageClass.Parameters[k])
+		}
+	}
+	klog.V(6).Infof("Provisioner Resolved StorageClass.Parameters: %v", scParams)
+
+	subPath := pvName
+	if scParams["pathPattern"] != "" {
+		subPath = scParams["pathPattern"]
 	}
 	// return error if set readonly in dynamic provisioner
 	for _, am := range options.PVC.Spec.AccessModes {
 		if am == corev1.ReadOnlyMany {
 			if options.StorageClass.Parameters["pathPattern"] == "" {
+				j.metrics.provisionErrors.Inc()
 				return nil, provisioncontroller.ProvisioningFinished, status.Errorf(codes.InvalidArgument, "Dynamic mounting uses the sub-path named pv name as data isolation, so read-only mode cannot be used.")
 			} else {
 				klog.Warningf("Volume is set readonly, please make sure the subpath %s exists.", subPath)
@@ -104,30 +135,15 @@ func (j *provisionerService) Provision(ctx context.Context, options provisioncon
 	mountOptions := make([]string, 0)
 	for _, mo := range options.StorageClass.MountOptions {
 		parsedStr := pvMeta.StringParser(mo)
-		for _, sp := range strings.Split(strings.TrimSpace(parsedStr), ",") {
-			mountOptions = append(mountOptions, sp)
-		}
+		mountOptions = append(mountOptions, strings.Split(strings.TrimSpace(parsedStr), ",")...)
 	}
 	klog.V(6).Infof("Provisioner Resolved MountOptions: %v", mountOptions)
-
-	pvName := options.PVName
-	scParams := make(map[string]string)
-	for k, v := range options.StorageClass.Parameters {
-		if strings.HasPrefix(k, "csi.storage.k8s.io/") {
-			scParams[k] = pvMeta.ResolveSecret(v, pvName)
-		} else {
-			scParams[k] = v
-		}
-	}
 
 	secret, err := j.K8sClient.GetSecret(ctx, scParams[config.ProvisionerSecretName], scParams[config.ProvisionerSecretNamespace])
 	if err != nil {
 		klog.Errorf("[PVCReconciler]: Get Secret error: %v", err)
+		j.metrics.provisionErrors.Inc()
 		return nil, provisioncontroller.ProvisioningFinished, errors.New("unable to provision new pv: " + err.Error())
-	}
-	secretData := make(map[string]string)
-	for k, v := range secret.Data {
-		secretData[k] = string(v)
 	}
 	// set volume context
 	volCtx := make(map[string]string)

@@ -19,6 +19,7 @@ package builder
 import (
 	"fmt"
 	"path"
+	"path/filepath"
 	"regexp"
 	"strconv"
 	"strings"
@@ -97,8 +98,8 @@ func (r *BaseBuilder) genCommonJuicePod(cnGen func() corev1.Container) *corev1.P
 	pod.Spec.Containers[0].Resources = r.jfsSetting.Resources
 	pod.Spec.Containers[0].Lifecycle = &corev1.Lifecycle{
 		PreStop: &corev1.Handler{
-			Exec: &corev1.ExecAction{Command: []string{"sh", "-c", fmt.Sprintf(
-				"umount %s -l && rmdir %s", r.jfsSetting.MountPath, r.jfsSetting.MountPath)}},
+			Exec: &corev1.ExecAction{Command: []string{"sh", "-c", "+e", fmt.Sprintf(
+				"umount %s -l; rmdir %s; exit 0", r.jfsSetting.MountPath, r.jfsSetting.MountPath)}},
 		},
 	}
 
@@ -155,7 +156,12 @@ func (r *BaseBuilder) genInitCommand() string {
 			formatCmd = formatCmd + " --encrypt-rsa-key=/root/.rsa/rsa-key.pem"
 		}
 	}
-
+	if r.jfsSetting.InitConfig != "" {
+		confPath := filepath.Join(config.ROConfPath, r.jfsSetting.Name+".conf")
+		args := []string{"cp", confPath, r.jfsSetting.ClientConfPath}
+		confCmd := strings.Join(args, " ")
+		formatCmd = strings.Join([]string{confCmd, formatCmd}, "\n")
+	}
 	return formatCmd
 }
 
@@ -263,7 +269,7 @@ func (r *BaseBuilder) _genMetadata() (labels map[string]string, annotations map[
 
 // _genJuiceVolumes generates volumes & volumeMounts
 // 1. if encrypt_rsa_key is set, mount secret to /root/.rsa
-// 2. if init_config is set, mount secret to /root/.config
+// 2. if initconfig is set, mount secret to /etc/juicefs
 // 3. configs in secret
 func (r *BaseBuilder) _genJuiceVolumes() ([]corev1.Volume, []corev1.VolumeMount) {
 	volumes := []corev1.Volume{}
@@ -296,7 +302,7 @@ func (r *BaseBuilder) _genJuiceVolumes() ([]corev1.Volume, []corev1.VolumeMount)
 			VolumeSource: corev1.VolumeSource{Secret: &corev1.SecretVolumeSource{
 				SecretName: secretName,
 				Items: []corev1.KeyToPath{{
-					Key:  "init_config",
+					Key:  "initconfig",
 					Path: r.jfsSetting.Name + ".conf",
 				}},
 			}},
@@ -304,7 +310,7 @@ func (r *BaseBuilder) _genJuiceVolumes() ([]corev1.Volume, []corev1.VolumeMount)
 		volumeMounts = append(volumeMounts,
 			corev1.VolumeMount{
 				Name:      "init-config",
-				MountPath: "/root/.juicefs",
+				MountPath: config.ROConfPath,
 			},
 		)
 	}

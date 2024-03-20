@@ -24,6 +24,7 @@ import (
 	"strconv"
 	"time"
 
+	"k8s.io/client-go/util/retry"
 	"k8s.io/klog"
 	ctrl "sigs.k8s.io/controller-runtime"
 
@@ -33,6 +34,7 @@ import (
 	"github.com/juicedata/juicefs-csi-driver/pkg/driver"
 	k8s "github.com/juicedata/juicefs-csi-driver/pkg/k8sclient"
 	"github.com/juicedata/juicefs-csi-driver/pkg/util"
+	"github.com/prometheus/client_golang/prometheus/promhttp"
 )
 
 func parseNodeConfig() {
@@ -70,6 +72,12 @@ func parseNodeConfig() {
 		duration, _ := time.ParseDuration(timeout)
 		if duration > config.ReconcileTimeout {
 			config.ReconcileTimeout = duration
+		}
+	}
+	if interval := os.Getenv("JUICEFS_CONFIG_UPDATE_INTERVAL"); interval != "" {
+		duration, _ := time.ParseDuration(interval)
+		if duration > config.SecretReconcilerInterval {
+			config.SecretReconcilerInterval = duration
 		}
 	}
 
@@ -122,19 +130,11 @@ func parseNodeConfig() {
 
 func nodeRun() {
 	parseNodeConfig()
-
-	if version {
-		info, err := driver.GetVersionJSON()
-		if err != nil {
-			klog.Fatalln(err)
-		}
-		fmt.Println(info)
-		os.Exit(0)
-	}
 	if nodeID == "" {
 		klog.Fatalln("nodeID must be provided")
 	}
 
+	// http server for pprof
 	go func() {
 		port := 6060
 		for {
@@ -143,12 +143,32 @@ func nodeRun() {
 		}
 	}()
 
+	registerer, registry := util.NewPrometheus(config.NodeName)
+	// http server for metrics
+	go func() {
+		mux := http.NewServeMux()
+		mux.Handle("/metrics", promhttp.HandlerFor(
+			registry,
+			promhttp.HandlerOpts{
+				// Opt into OpenMetrics to support exemplars.
+				EnableOpenMetrics: true,
+			},
+		))
+		server := &http.Server{
+			Addr:    fmt.Sprintf(":%d", config.WebPort),
+			Handler: mux,
+		}
+		server.ListenAndServe()
+	}()
+
 	// enable pod manager in csi node
 	if !process && podManager {
 		needStartPodManager := false
 		if config.KubeletPort != "" && config.HostIp != "" {
-			if err := controller.StartReconciler(); err != nil {
-				klog.V(5).Info("Could not Start Reconciler of polling kubelet and fallback to watch ApiServer.")
+			if err := retry.OnError(retry.DefaultBackoff, func(err error) bool { return true }, func() error {
+				return controller.StartReconciler()
+			}); err != nil {
+				klog.V(5).Infof("Could not Start Reconciler of polling kubelet and fallback to watch ApiServer. err: %+v", err)
 				needStartPodManager = true
 			}
 		} else {
@@ -171,7 +191,7 @@ func nodeRun() {
 		klog.V(5).Infof("Pod Reconciler Started")
 	}
 
-	drv, err := driver.NewDriver(endpoint, nodeID, leaderElection, leaderElectionNamespace, leaderElectionLeaseDuration)
+	drv, err := driver.NewDriver(endpoint, nodeID, leaderElection, leaderElectionNamespace, leaderElectionLeaseDuration, registerer)
 	if err != nil {
 		klog.Fatalln(err)
 	}

@@ -53,6 +53,7 @@ type JfsSetting struct {
 	CacheEmptyDir      *CacheEmptyDir       // EmptyDir using by mount pod
 	CacheInlineVolumes []*CacheInlineVolume // InlineVolume using by mount pod
 	CacheDirs          []string             // hostPath using by mount pod
+	ClientConfPath     string               `json:"-"`
 
 	// put in secret
 	SecretKey     string            `json:"secret-key,omitempty"`
@@ -81,7 +82,7 @@ type JfsSetting struct {
 	Options    []string // mount options
 	FormatCmd  string   // format or auth
 	SubPath    string   // subPath which is to be created or deleted
-	SecretName string   // secret name which is set env in pod
+	SecretName string   // secret with JuiceFS volume credentials
 
 	Attr PodAttr
 }
@@ -153,6 +154,7 @@ func ParseSetting(secrets, volCtx map[string]string, options []string, usePod bo
 	jfsSetting.Storage = secrets["storage"]
 	jfsSetting.Envs = make(map[string]string)
 	jfsSetting.Configs = make(map[string]string)
+	jfsSetting.ClientConfPath = DefaultClientConfPath
 	jfsSetting.CacheDirs = []string{}
 	jfsSetting.CachePVCs = []CachePVC{}
 
@@ -349,7 +351,7 @@ func ParseSetting(secrets, volCtx map[string]string, options []string, usePod bo
 		memoryLimit := volCtx[MountPodMemLimitKey]
 		cpuRequest := volCtx[MountPodCpuRequestKey]
 		memoryRequest := volCtx[MountPodMemRequestKey]
-		jfsSetting.Resources, err = parsePodResources(cpuLimit, memoryLimit, cpuRequest, memoryRequest)
+		jfsSetting.Resources, err = ParsePodResources(cpuLimit, memoryLimit, cpuRequest, memoryRequest)
 		if err != nil {
 			klog.Errorf("Parse resource error: %v", err)
 			return nil, err
@@ -499,7 +501,11 @@ func parseYamlOrJson(source string, dst interface{}) error {
 	return nil
 }
 
-func parsePodResources(cpuLimit, memoryLimit, cpuRequest, memoryRequest string) (corev1.ResourceRequirements, error) {
+func ParseYamlOrJson(source string, dst interface{}) error {
+	return parseYamlOrJson(source, dst)
+}
+
+func ParsePodResources(cpuLimit, memoryLimit, cpuRequest, memoryRequest string) (corev1.ResourceRequirements, error) {
 	podLimit := map[corev1.ResourceName]resource.Quantity{}
 	podRequest := map[corev1.ResourceName]resource.Quantity{}
 	// set default value

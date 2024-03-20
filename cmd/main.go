@@ -18,11 +18,13 @@ package main
 
 import (
 	goflag "flag"
+	"fmt"
 	_ "net/http/pprof"
 	"os"
 	"strings"
 	"time"
 
+	"github.com/juicedata/juicefs-csi-driver/pkg/driver"
 	"github.com/spf13/cobra"
 	"k8s.io/klog"
 )
@@ -34,10 +36,12 @@ var (
 	formatInPod bool
 	process     bool
 
-	provisioner bool
-	webhook     bool
-	certDir     string
-	webhookPort int
+	provisioner       bool
+	cacheConf         bool
+	webhook           bool
+	certDir           string
+	webhookPort       int
+	validationWebhook bool
 
 	podManager         bool
 	reconcilerInterval int
@@ -52,6 +56,15 @@ func main() {
 		Use:   "juicefs-csi",
 		Short: "juicefs csi driver",
 		Run: func(cmd *cobra.Command, args []string) {
+			if version {
+				info, err := driver.GetVersionJSON()
+				if err != nil {
+					klog.Fatalln(err)
+				}
+				fmt.Println(info)
+				os.Exit(0)
+			}
+
 			run()
 		},
 	}
@@ -67,9 +80,11 @@ func main() {
 
 	// controller flags
 	cmd.Flags().BoolVar(&provisioner, "provisioner", false, "Enable provisioner in controller. default false.")
-	cmd.Flags().BoolVar(&webhook, "webhook", false, "Enable webhook in controller. default false.")
+	cmd.Flags().BoolVar(&cacheConf, "cache-client-conf", false, "Cache client config file. default false.")
+	cmd.Flags().BoolVar(&webhook, "webhook", false, "Enable mutating webhook in controller for sidecar mode. default false.")
 	cmd.Flags().StringVar(&certDir, "webhook-cert-dir", "/etc/webhook/certs", "Admission webhook cert/key dir.")
-	cmd.Flags().IntVar(&webhookPort, "webhook-port", 9444, "Admission webhook cert/key dir.")
+	cmd.Flags().IntVar(&webhookPort, "webhook-port", 9444, "Admission webhook port.")
+	cmd.Flags().BoolVar(&validationWebhook, "validating-webhook", false, "Enable validation webhook in controller. default false.")
 
 	// node flags
 	cmd.Flags().BoolVar(&podManager, "enable-manager", false, "Enable pod manager in csi node. default false.")

@@ -69,7 +69,8 @@ Installation requires Helm 3.1.0 and above, refer to the [Helm Installation Guid
 1. Execute below commands to deploy JuiceFS CSI Driver:
 
     ```shell
-    helm install juicefs-csi-driver juicefs/juicefs-csi-driver -n kube-system -f ./values-mycluster.yaml
+    # Use this command for both initial installation, and subsequent config changes
+    helm upgrade --install juicefs-csi-driver juicefs/juicefs-csi-driver -n kube-system -f ./values-mycluster.yaml
     ```
 
 It's recommended that you include the values file used above in the version control system, so that any changes to the config can be restored.
@@ -126,6 +127,12 @@ CSI Node Service is a DaemonSet, and by default runs on all Kubernetes worker no
 Learn about JuiceFS CSI Driver architecture, and components functionality in [Introduction](./introduction.md#architecture).
 
 ## Installing in sidecar mode {#sidecar}
+
+:::tip Serverless Headsup
+Since v0.23.5, Helm chart supports `mountMode: serverless`, a special form of sidecar mode which removes everything not supported in a serverless environment, e.g. hostPath mount points, and container privileges.
+
+The `serverless` mode allows CSI Driver to be installed in full virtual nodes, in comparison, the default `sidecar` mode still requires an actual VM.
+:::
 
 Sidecar is very different from the default mount pod mode, for example, sharing JuiceFS Client is not available, neither does it support [automatic mount point recovery](./guide/pv.md#automatic-mount-point-recovery).
 

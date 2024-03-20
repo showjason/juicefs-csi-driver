@@ -69,6 +69,8 @@ type Interface interface {
 	Settings(ctx context.Context, volumeID string, secrets, volCtx map[string]string, options []string) (*config.JfsSetting, error)
 	GetSubPath(ctx context.Context, volumeID string) (string, error)
 	CreateTarget(ctx context.Context, target string) error
+	AuthFs(ctx context.Context, secrets map[string]string, jfsSetting *config.JfsSetting, force bool) (string, error)
+	Status(ctx context.Context, metaUrl string) error
 }
 
 type juicefs struct {
@@ -316,6 +318,10 @@ func (j *juicefs) JfsMount(ctx context.Context, volumeID string, target string, 
 	if err := j.validTarget(target); err != nil {
 		return nil, err
 	}
+
+	if err := j.overwriteVolCtxWithPVCAnnotations(ctx, volumeID, volCtx); err != nil {
+		klog.Errorf("Overwrite volCtx with PVC annotations error: %v", err)
+	}
 	jfsSetting, err := j.genJfsSettings(ctx, volumeID, target, secrets, volCtx, options)
 	if err != nil {
 		return nil, err
@@ -337,6 +343,30 @@ func (j *juicefs) JfsMount(ctx context.Context, volumeID string, target string, 
 	}, nil
 }
 
+func (j *juicefs) overwriteVolCtxWithPVCAnnotations(ctx context.Context, volumeID string, volCtx map[string]string) error {
+	if config.ByProcess {
+		return nil
+	}
+	pv, err := j.K8sClient.GetPersistentVolume(ctx, volumeID)
+	if err != nil {
+		return err
+	}
+
+	pvc, err := j.K8sClient.GetPersistentVolumeClaim(ctx, pv.Spec.ClaimRef.Name, pv.Spec.ClaimRef.Namespace)
+	if err != nil {
+		klog.Errorf("Get pvc %s/%s error: %v", pv.Spec.ClaimRef.Namespace, pv.Spec.ClaimRef.Name, err)
+		return err
+	}
+
+	for k, v := range pvc.Annotations {
+		if !strings.HasPrefix(k, "juicefs") {
+			continue
+		}
+		volCtx[k] = v
+	}
+	return nil
+}
+
 // Settings get all jfs settings and generate format/auth command
 func (j *juicefs) Settings(ctx context.Context, volumeID string, secrets, volCtx map[string]string, options []string) (*config.JfsSetting, error) {
 	mountOptions, err := j.validOptions(volumeID, options, volCtx)
@@ -345,7 +375,7 @@ func (j *juicefs) Settings(ctx context.Context, volumeID string, secrets, volCtx
 	}
 	jfsSetting, err := config.ParseSetting(secrets, volCtx, mountOptions, !config.ByProcess)
 	if err != nil {
-		klog.V(5).Infof("Parse config error: %v", err)
+		klog.V(5).Infof("Parse config for %s error: %v", secrets["name"], err)
 		return nil, err
 	}
 	jfsSetting.VolumeId = volumeID
@@ -360,6 +390,7 @@ func (j *juicefs) Settings(ctx context.Context, volumeID string, secrets, volCtx
 			jfsSetting.FormatCmd = res
 		}
 		jfsSetting.UUID = secrets["name"]
+		jfsSetting.InitConfig = secrets["initconfig"]
 	} else {
 		noUpdate := false
 		if secrets["storage"] == "" || secrets["bucket"] == "" {
@@ -731,7 +762,7 @@ func (j *juicefs) AuthFs(ctx context.Context, secrets map[string]string, setting
 		}
 		if config.ByProcess && secrets["initconfig"] != "" {
 			conf := secrets["name"] + ".conf"
-			confPath := filepath.Join("/root/.juicefs", conf)
+			confPath := filepath.Join(setting.ClientConfPath, conf)
 			if _, err := os.Stat(confPath); os.IsNotExist(err) {
 				err = ioutil.WriteFile(confPath, []byte(secrets["initconfig"]), 0644)
 				if err != nil {
@@ -750,6 +781,12 @@ func (j *juicefs) AuthFs(ctx context.Context, secrets map[string]string, setting
 		stripped := setting.StripFormatOptions(options, []string{"session-token"})
 		cmdArgs = append(cmdArgs, stripped...)
 	}
+
+	if setting.ClientConfPath != "" {
+		cmdArgs = append(cmdArgs, fmt.Sprintf("--conf-dir=%s", setting.ClientConfPath))
+		args = append(args, fmt.Sprintf("--conf-dir=%s", setting.ClientConfPath))
+	}
+
 	klog.V(5).Infof("AuthFs cmd: %v", cmdArgs)
 
 	// only run command when in process mode
@@ -810,7 +847,10 @@ func (j *juicefs) SetQuota(ctx context.Context, secrets map[string]string, jfsSe
 	klog.Infof("SetQuota cmd: %s", strings.Join(cmdArgs, " "))
 	cmdCtx, cmdCancel := context.WithTimeout(ctx, 2*defaultCheckTimeout)
 	defer cmdCancel()
-
+	envs := syscall.Environ()
+	for key, val := range jfsSetting.Envs {
+		envs = append(envs, fmt.Sprintf("%s=%s", security.EscapeBashStr(key), security.EscapeBashStr(val)))
+	}
 	var err error
 	if !jfsSetting.IsCe {
 		var authRes string
@@ -818,7 +858,10 @@ func (j *juicefs) SetQuota(ctx context.Context, secrets map[string]string, jfsSe
 		if err != nil {
 			return errors.Wrap(err, authRes)
 		}
-		res, err := j.Exec.CommandContext(cmdCtx, config.CliPath, args...).CombinedOutput()
+		quotaCmd := j.Exec.CommandContext(cmdCtx, config.CliPath, args...)
+		quotaCmd.SetEnv(envs)
+		res, err := quotaCmd.CombinedOutput()
+
 		if err == nil {
 			klog.V(5).Infof("quota set success: %s", string(res))
 		}
@@ -828,7 +871,9 @@ func (j *juicefs) SetQuota(ctx context.Context, secrets map[string]string, jfsSe
 	done := make(chan error, 1)
 	go func() {
 		// ce cli will block until quota is set
-		res, err := j.Exec.CommandContext(context.Background(), config.CeCliPath, args...).CombinedOutput()
+		quotaCmd := j.Exec.CommandContext(context.Background(), config.CeCliPath, args...)
+		quotaCmd.SetEnv(envs)
+		res, err := quotaCmd.CombinedOutput()
 		if err == nil {
 			klog.V(5).Infof("quota set success: %s", string(res))
 		}
@@ -849,6 +894,18 @@ func wrapSetQuotaErr(res string, err error) error {
 		re := string(res)
 		if strings.Contains(re, "invalid command: quota") || strings.Contains(re, "No help topic for 'quota'") {
 			klog.Info("juicefs inside do not support quota, skip it.")
+			return nil
+		}
+		return errors.Wrap(err, re)
+	}
+	return err
+}
+
+func wrapStatusErr(res string, err error) error {
+	if err != nil {
+		re := string(res)
+		if strings.Contains(re, "database is not formatted") {
+			klog.Infof("juicefs not formatted, ignore status command error")
 			return nil
 		}
 		return errors.Wrap(err, re)
@@ -1004,4 +1061,29 @@ func (j *juicefs) ceFormat(ctx context.Context, secrets map[string]string, noUpd
 		return "", errors.Wrap(err, re)
 	}
 	return string(res), nil
+}
+
+// Status checks the status of JuiceFS, only for community edition
+func (j *juicefs) Status(ctx context.Context, metaUrl string) error {
+	args := []string{"status", metaUrl}
+	cmdArgs := []string{config.CeCliPath, "status", "${metaurl}"}
+
+	klog.Infof("Status cmd: %s", strings.Join(cmdArgs, " "))
+	cmdCtx, cmdCancel := context.WithTimeout(ctx, 2*defaultCheckTimeout)
+	defer cmdCancel()
+
+	done := make(chan error, 1)
+	go func() {
+		res, err := j.Exec.CommandContext(context.Background(), config.CeCliPath, args...).CombinedOutput()
+		done <- wrapStatusErr(string(res), err)
+		close(done)
+	}()
+
+	select {
+	case <-cmdCtx.Done():
+		err := fmt.Errorf("juicefs status %s timed out", 2*defaultCheckTimeout)
+		return err
+	case err := <-done:
+		return err
+	}
 }

@@ -82,6 +82,9 @@ func (d *controllerService) CreateVolume(ctx context.Context, req *csi.CreateVol
 	// set volume context
 	volCtx := make(map[string]string)
 	for k, v := range req.Parameters {
+		if strings.HasPrefix(v, "$") {
+			klog.Warningf("CreateVolume: volume %s parameters %s uses template pattern, please enable provisioner in CSI Controller, not works in default mode.", volumeId, k)
+		}
 		volCtx[k] = v
 	}
 	// return error if set readonly in dynamic provisioner
@@ -247,7 +250,7 @@ func (d *controllerService) ListSnapshots(ctx context.Context, req *csi.ListSnap
 	return nil, status.Error(codes.Unimplemented, "")
 }
 
-// ControllerExpandVolume unimplemented
+// ControllerExpandVolume adjusts quota according to capacity settings
 func (d *controllerService) ControllerExpandVolume(ctx context.Context, req *csi.ControllerExpandVolumeRequest) (*csi.ControllerExpandVolumeResponse, error) {
 	klog.V(6).Infof("ControllerExpandVolume request: %+v", *req)
 

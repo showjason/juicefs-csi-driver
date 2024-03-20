@@ -70,7 +70,8 @@ title: 安装
 1. 安装 CSI 驱动：
 
    ```shell
-   helm install juicefs-csi-driver juicefs/juicefs-csi-driver -n kube-system -f ./values-mycluster.yaml
+   # 不论是初次安装还是后续的配置变更，都可以运行这一行命令达到效果
+   helm upgrade --install juicefs-csi-driver juicefs/juicefs-csi-driver -n kube-system -f ./values-mycluster.yaml
    ```
 
 推荐将上方的 values 文件进行源码管理，这样一来就算配置不断变化，也能对其进行追溯和回滚。
@@ -131,6 +132,12 @@ CSI Node Service 是一个 DaemonSet，默认在所有节点部署，因此在�
 Sidecar 与默认的容器挂载方式有很大不同，包括无法复用挂载客户端，以及无法设置[挂载点自动恢复](./guide/pv.md#automatic-mount-point-recovery)。决定采纳之前，务必仔细阅读[「Sidecar 模式注意事项」](./introduction.md#sidecar)。
 
 ### Helm
+
+:::tip Serverless 注意事项
+从 v0.23.5 开始，Helm chart 支持名为 `mountMode: serverless` 的特殊模式。这种模式与 sidecar 相同，但移除了各种 serverless 环境中不支持的配置，比如 hostPath 挂载点，以及 privileged 权限。
+
+`serverless` 模式将允许在 serverless 虚拟节点上安装 JuiceFS CSI 驱动，不再需要一个实际节点。
+:::
 
 在 values 中修改配置：
 

@@ -31,6 +31,7 @@ import (
 	"regexp"
 	"strconv"
 	"strings"
+	"syscall"
 	"time"
 
 	corev1 "k8s.io/api/core/v1"
@@ -38,6 +39,8 @@ import (
 
 	"github.com/juicedata/juicefs-csi-driver/pkg/config"
 	k8s "github.com/juicedata/juicefs-csi-driver/pkg/k8sclient"
+
+	"github.com/prometheus/client_golang/prometheus"
 )
 
 const (
@@ -400,18 +403,11 @@ func CheckDynamicPV(name string) (bool, error) {
 }
 
 func UmountPath(ctx context.Context, sourcePath string) {
-	cmd := exec.CommandContext(ctx, "umount", sourcePath)
-	if outBytes, err := cmd.CombinedOutput(); err != nil {
-		out := string(outBytes)
-		if !strings.Contains(out, "not mounted") &&
-			!strings.Contains(out, "mountpoint not found") &&
-			!strings.Contains(out, "no mount point specified") {
-			klog.V(5).Infof("Unmount %s failed: %q, try to lazy unmount", sourcePath, err)
-			output, err := exec.CommandContext(ctx, "umount", "-l", sourcePath).CombinedOutput()
-			if err != nil {
-				klog.Errorf("could not lazy unmount %q: %v, output: %s", sourcePath, err, string(output))
-			}
-		}
+	out, err := exec.CommandContext(ctx, "umount", "-l", sourcePath).CombinedOutput()
+	if !strings.Contains(string(out), "not mounted") &&
+		!strings.Contains(string(out), "mountpoint not found") &&
+		!strings.Contains(string(out), "no mount point specified") {
+		klog.Errorf("Could not lazy unmount %q: %v, output: %s", sourcePath, err, string(out))
 	}
 }
 
@@ -447,4 +443,26 @@ func ImageResol(image string) (hasCE, hasEE bool) {
 		return true, false
 	}
 	return true, true
+}
+
+func GetDiskUsage(path string) (uint64, uint64, uint64, uint64) {
+	var stat syscall.Statfs_t
+	if err := syscall.Statfs(path, &stat); err == nil {
+		// in bytes
+		blockSize := uint64(stat.Bsize)
+		totalSize := blockSize * stat.Blocks
+		freeSize := blockSize * stat.Bfree
+		totalFiles := stat.Files
+		freeFiles := stat.Ffree
+		return totalSize, freeSize, totalFiles, freeFiles
+	} else {
+		klog.Errorf("GetDiskUsage: syscall.Statfs failed: %v", err)
+		return 1, 1, 1, 1
+	}
+}
+
+func NewPrometheus(nodeName string) (prometheus.Registerer, *prometheus.Registry) {
+	registry := prometheus.NewRegistry() // replace default so only JuiceFS metrics are exposed
+	registerer := prometheus.WrapRegistererWithPrefix("juicefs_", prometheus.WrapRegistererWith(prometheus.Labels{"node_name": nodeName}, registry))
+	return registerer, registry
 }

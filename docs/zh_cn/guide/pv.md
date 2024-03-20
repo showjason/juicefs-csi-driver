@@ -12,7 +12,7 @@ sidebar_position: 1
 
 虽然下方的示范中，Secret 都命名为了 `juicefs-secret`，但事实上命名是自定义的，你可以创建出多个 Secret，存储不同的文件系统认证信息，这样便可以在同一个 Kubernetes 集群中使用多个不同的文件系统。详见[「使用多个文件系统」](#multiple-volumes)。
 
-:::note 注意
+:::tip
 
 * 如果你已经在[用 Helm 管理 StorageClass](#helm-sc)，那么 Kubernetes Secret 其实已经一并创建，不需要再用 kubectl 单独创建和管理 Secret。
 * 修改了文件系统认证信息后，还需要滚动升级或重启应用 Pod，CSI 驱动重新创建 Mount Pod，配置变更方能生效。
@@ -51,9 +51,9 @@ stringData:
 - `bucket`：对象存储 Bucket URL。更多信息参考[「如何设置对象存储」](https://juicefs.com/docs/zh/community/how_to_setup_object_storage) 。
 - `access-key`/`secret-key`：对象存储的认证信息
 - `envs`：Mount Pod 的环境变量
-- `format-options`：创建文件系统的选项，详见 [`juicefs format`](https://juicefs.com/docs/zh/community/command_reference#format)。该选项仅在 v0.13.3 及以上可用。
+- `format-options`：创建文件系统的选项，详见 [`juicefs format`](https://juicefs.com/docs/zh/community/command_reference#format)
 
-如遇重复参数（比如 `access-key`），既可以在 Kubernetes Secret 中填写，同时也可以在 `format-options` 下填写，此时 `format-options` 的参数优先级最高。
+如遇重复参数，比如 `access-key`，既可以在 `stringData.access-key`中填写，同时也可以在 `format-options` 下填写，此时 `format-options` 的参数优先级最高。
 
 ### 云服务 {#cloud-service}
 
@@ -84,9 +84,9 @@ stringData:
 - `token`：访问 JuiceFS 文件系统所需的 token。更多信息参考[访问令牌](https://juicefs.com/docs/zh/cloud/acl/#%E8%AE%BF%E9%97%AE%E4%BB%A4%E7%89%8C)。
 - `access-key`/`secret-key`：对象存储的认证信息
 - `envs`：Mount Pod 的环境变量
-- `format-options`：云服务 [`juicefs auth`](https://juicefs.com/docs/zh/cloud/commands_reference#auth) 命令所使用的的参数，作用是认证，以及生成挂载的配置文件。该选项仅在 v0.13.3 及以上可用
+- `format-options`：云服务 [`juicefs auth`](https://juicefs.com/docs/zh/cloud/commands_reference#auth) 命令所使用的的参数，作用是认证，以及生成挂载的配置文件
 
-如遇重复参数（比如 `access-key`），既可以在 Kubernetes Secret 中填写，同时也可以在 `format-options` 下填写，此时 `format-options` 的参数优先级最高。
+如遇重复参数，比如 `access-key`，既可以在 `stringData.access-key`中填写，同时也可以在 `format-options` 下填写，此时 `format-options` 的参数优先级最高。
 
 云服务的 `juicefs auth` 命令作用类似于社区版的 `juicefs format` 命令，因此字段名依然叫做 `format-options`。
 
@@ -239,7 +239,7 @@ stringData:
 
 ## 静态配置 {#static-provisioning}
 
-静态配置是最简单直接地在 Kubernetes 中使用 JuiceFS PV 的方式，阅读[「使用方式」](../introduction.md#usage)以了解「动态配置」与「静态配置」的区别。
+静态配置是最简单直接地在 Kubernetes 中使用 JuiceFS PV 的方式，如果按照下方示范创建，会直接挂载整个文件系统的根目录（如有需要，也可以参考[挂载子目录](#mount-subdirectory)）。阅读[「使用方式」](../introduction.md#usage)以了解「动态配置」与「静态配置」的区别。
 
 创建所需的资源定义示范如下，字段含义请参考注释：
 
@@ -383,7 +383,7 @@ parameters:
 
 ## 动态配置 {#dynamic-provisioning}
 
-阅读[「使用方式」](../introduction.md#usage)以了解什么是「动态配置」。动态配置方式会自动为你创建 PV，而创建 PV 的基础配置参数在 StorageClass 中定义，因此你需要先行[创建 StorageClass](#create-storage-class)。
+阅读[「使用方式」](../introduction.md#usage)以了解什么是「动态配置」。动态配置方式会自动为你创建 PV，每一个 PV 会最终对应 JuiceFS 文件系统中的一个子目录，而创建 PV 的基础配置参数在 StorageClass 中定义，因此你需要先行[创建 StorageClass](#create-storage-class)。
 
 创建 PVC 和应用 Pod，示范如下：
 
@@ -477,6 +477,54 @@ spec:
 :::note 注意
 在回收策略方面，临时卷与动态配置一致，因此如果将[默认 PV 回收策略](./resource-optimization.md#reclaim-policy)设置为 `Retain`，那么临时存储将不再是临时存储，PV 需要手动释放。
 :::
+
+## 格式化参数/认证参数 {#format-options}
+
+「格式化参数/认证参数」是 `juicefs [format|auth]` 命令所接受的参数，其中：
+
+* 社区版的 [`format`](https://juicefs.com/docs/zh/community/command_reference/#format) 是用于创建新文件系统的命令。社区版需要用户自行用客户端 `format` 命令创建文件系统，然后才能挂载；
+* 企业版的 [`auth`](https://juicefs.com/docs/zh/cloud/reference/command_reference/#auth) 命令是负责向控制台发起认证、获取客户端配置文件。他在使用流程中的作用和 `format` 有些相似，这涉及到两个版本在使用上的区别：和社区版需要先格式化创建文件系统不同，企业版需要在 Web 控制台创建文件系统，客户端并不具备创建文件系统的能力，但是挂载时需要向控制台发起认证，这也就是 `auth` 命令的功能。
+
+考虑到这两个命令的相似性，不论你使用社区版还是企业版，对应的命令运行参数都填入 `format-options`，示范如下。
+
+:::tip
+修改 `format-options` 并不影响已有的挂载客户端，即便重启 Mount Pod 也不会生效，需要滚升/重启应用 Pod，或者重建 PVC，方能生效。
+
+:::
+
+社区版：
+
+```yaml {13}
+apiVersion: v1
+kind: Secret
+metadata:
+  name: juicefs-secret
+type: Opaque
+stringData:
+  name: <JUICEFS_NAME>
+  metaurl: <META_URL>
+  storage: s3
+  bucket: https://<BUCKET>.s3.<REGION>.amazonaws.com
+  access-key: <ACCESS_KEY>
+  secret-key: <SECRET_KEY>
+  format-options: trash-days=1
+```
+
+企业版：
+
+```yaml {13}
+apiVersion: v1
+kind: Secret
+metadata:
+  name: juicefs-secret
+type: Opaque
+stringData:
+  name: ${JUICEFS_NAME}
+  token: ${JUICEFS_TOKEN}
+  access-key: ${ACCESS_KEY}
+  secret-key: ${SECRET_KEY}
+  format-options: bucket2=xxx,access-key2=xxx,secret-key2=xxx
+```
 
 ## 挂载参数 {#mount-options}
 
@@ -630,28 +678,13 @@ spec:
 
 严格来说，由于动态配置本身的性质，并不支持挂载 JuiceFS 中已经存在的目录。但动态配置下可以[调整子目录命名模板](#using-path-pattern)，让生成的子目录名称对齐 JuiceFS 中已有的目录，来达到同样的效果。
 
-## 配置更加易读的 PV 目录名称 {#using-path-pattern}
+## 使用挂载参数模版 {#options-template}
 
 :::tip 提示
 [进程挂载模式](../introduction.md#by-process)不支持该功能。
 :::
 
-在「动态配置」方式下，CSI 驱动在 JuiceFS 创建的子目录名称形如 `pvc-234bb954-dfa3-4251-9ebe-8727fb3ad6fd`，如果有众多应用同时使用 CSI 驱动，更会造成 JuiceFS 文件系统中创建大量此类 PV 目录，让人难以辨别：
-
-```shell
-$ ls /jfs
-pvc-76d2afa7-d1c1-419a-b971-b99da0b2b89c  pvc-a8c59d73-0c27-48ac-ba2c-53de34d31944  pvc-d88a5e2e-7597-467a-bf42-0ed6fa783a6b
-...
-```
-
-在 JuiceFS CSI 驱动 0.13.3 及以上版本，支持通过 `pathPattern` 这个配置来定义其不同 PV 的子目录格式，让目录名称更容易阅读、查找：
-
-```shell
-$ ls /jfs
-default-dummy-juicefs-pvc  default-example-juicefs-pvc ...
-```
-
-如果你的场景需要在动态配置下，让多个应用使用同一个 JuiceFS 子目录，也可以合理配置 `pathPattern`，让多个 PV 对应着 JuiceFS 文件系统中相同的子目录，实现多应用共享存储。顺带一提，[「静态配置」](#share-directory)是更为简单直接的实现多应用共享存储的方式（多个应用复用同一个 PVC 即可），如果条件允许，不妨优先采用静态配置方案。
+在「动态配置」方式下，我们使用不同 PVC 时 Provisoner 组件会根据 StorageClass 中的配置创建相应的 PV。所以默认情况下这些 PV 的挂载参数时固定的（继承自 StorageClass）。但当使用自定义 Provisoner 时，我们可以为不同 PVC 创建使用不同挂载参数的 PV。
 
 此特性默认关闭，需要手动启用。启用的方式就是为 CSI Controller 增添 `--provisioner=true` 启动参数，并且删去原本的 sidecar 容器，相当于让 CSI Controller 主进程自行监听资源变更，并执行相应的初始化操作。请根据 CSI Controller 的安装方式，按照下方步骤启用。
 
@@ -672,7 +705,7 @@ helm upgrade juicefs-csi-driver juicefs/juicefs-csi-driver -n kube-system -f ./v
 
 ### kubectl
 
-手动编辑 CSI Controller：
+如果是 kubectl 安装方式，启用该功能需要手动编辑 CSI Controller，操作较为复杂，因此建议[迁移到 Helm 安装方式](../administration/upgrade-csi-driver.md#migrate-to-helm)。
 
 ```shell
 kubectl edit sts -n kube-system juicefs-csi-controller
@@ -739,7 +772,69 @@ kubectl -n kube-system patch sts juicefs-csi-controller \
   -p='[{"op": "remove", "path": "/spec/template/spec/containers/1"}, {"op": "replace", "path": "/spec/template/spec/containers/0/args", "value": ["--endpoint=$(CSI_ENDPOINT)", "--logtostderr", "--nodeid=$(NODE_NAME)", "--v=5", "--provisioner=true"]}]'
 ```
 
-### 使用方式
+### 使用场景
+
+#### 根据网络区域设置 `cache-group`
+
+借助挂载参数模版，我们可以为不同网络区域的客户端设置不同的 `cache-group`。首先我们为不同网络区域的节点设置 annotations 以标记缓存组名称：
+
+```bash
+$ kubectl annotate --overwrite node minikube myjfs.juicefs.com/cacheGroup=region-1
+node/minikube annotated
+```
+
+然后在 `StorageClass` 中这样设置 `mountOptions` 和 `volumeBindingMode`：
+
+```yaml {11-13}
+apiVersion: storage.k8s.io/v1
+kind: StorageClass
+metadata:
+  name: juicefs-sc
+provisioner: csi.juicefs.com
+parameters:
+  csi.storage.k8s.io/provisioner-secret-name: juicefs-secret
+  csi.storage.k8s.io/provisioner-secret-namespace: default
+  csi.storage.k8s.io/node-publish-secret-name: juicefs-secret
+  csi.storage.k8s.io/node-publish-secret-namespace: default
+mountOptions:
+  - cache-group="${.node.annotations.myjfs.juicefs.com/cacheGroup}"
+# 必须设置为 `WaitForFirstConsumer`，否则 PV 会提前创建，此时不确定被分配的 Node，cache-group 注入不生效。
+volumeBindingMode: WaitForFirstConsumer
+```
+
+当创建 PVC 和使用它的 Pod 后，可以用下方命令核实 Provisioner 把节点 annotations 注入了相应的 PV：
+
+```bash {8}
+$ kubectl get pv pvc-4f2e2384-61f2-4045-b4df-fbdabe496c1b -o yaml
+apiVersion: v1
+kind: PersistentVolume
+metadata:
+  name: pvc-4f2e2384-61f2-4045-b4df-fbdabe496c1b
+spec:
+  mountOptions:
+  - cache-group="region-1"
+```
+
+#### 配置更加易读的 PV 目录名称 {#using-path-pattern}
+
+在「动态配置」方式下，CSI 驱动在 JuiceFS 创建的子目录名称形如 `pvc-234bb954-dfa3-4251-9ebe-8727fb3ad6fd`，如果有众多应用同时使用 CSI 驱动，更会造成 JuiceFS 文件系统中创建大量此类 PV 目录，让人难以辨别：
+
+```shell
+$ ls /jfs
+pvc-76d2afa7-d1c1-419a-b971-b99da0b2b89c  pvc-a8c59d73-0c27-48ac-ba2c-53de34d31944  pvc-d88a5e2e-7597-467a-bf42-0ed6fa783a6b
+...
+```
+
+在 JuiceFS CSI 驱动 0.13.3 及以上版本，支持通过 `pathPattern` 这个配置来定义其不同 PV 的子目录格式，让目录名称更容易阅读、查找：
+
+```shell
+$ ls /jfs
+default-dummy-juicefs-pvc  default-example-juicefs-pvc ...
+```
+
+:::tip 提示
+如果你的场景需要在动态配置下，让多个应用使用同一个 JuiceFS 子目录，也可以合理配置 `pathPattern`，让多个 PV 对应着 JuiceFS 文件系统中相同的子目录，实现多应用共享存储。顺带一提，[「静态配置」](#share-directory)是更为简单直接的实现多应用共享存储的方式（多个应用复用同一个 PVC 即可），如果条件允许，不妨优先采用静态配置方案。
+:::
 
 在 `StorageClass` 中这样使用 `pathPattern`：
 
@@ -754,14 +849,26 @@ parameters:
   csi.storage.k8s.io/provisioner-secret-namespace: default
   csi.storage.k8s.io/node-publish-secret-name: juicefs-secret
   csi.storage.k8s.io/node-publish-secret-namespace: default
-  pathPattern: "${.PVC.namespace}-${.PVC.name}"
+  pathPattern: "${.pvc.namespace}-${.pvc.name}"
 ```
 
-命名模板中可以引用任意 PVC 元数据，例如标签、注解、名称或命名空间，比如：
+### 可注入值与版本差异
 
-1. `${.PVC.namespace}-${.PVC.name}`，则 PV 目录为 `<PVC 命名空间>-<PVC 名称>`。
-1. `${.PVC.labels.foo}`，则 PV 目录为 PVC 中 `foo` 标签的值。
-1. `${.PVC.annotations.bar}`，则 PV 目录为 PVC 中 `bar` 注解（annotation）的值。
+在 0.23.3 版本中，挂载参数和 `pathPattern` 中均可注入 Node 和 PVC 的元数据，比如：
+
+1. `${.node.name}-${.node.podCIDR}`，注入 Node 的 `metadata.name` 和 `spec.podCIDR`，例如 `minikube-10.244.0.0/24`。
+2. `${.node.labels.foo}`，注入 Node 的 `metadata.labels["foo"]`。
+3. `${.node.annotations.bar}`，注入 Node 的 `metadata.annotations["bar"]`。
+4. `${.pvc.namespace}-${.pvc.name}`，注入 PVC 的 `metadata.namespace` 和 `metadata.name`，例如 `default-dynamic-pvc`。
+5. `${.PVC.namespace}-${.PVC.name}`，注入 PVC 的 `metadata.namespace` 和 `metadata.name`（与旧版本兼容）。
+6. `${.pvc.labels.foo}`，注入 PVC 的 `metadata.labels["foo"]`。
+7. `${.pvc.annotations.bar}`，注入 PVC 的 `metadata.annotations["bar"]`。
+
+而在更早版本中（>=0.13.3）只有 `pathPattern` 支持注入，且仅支持注入 PVC 的元数据，比如：
+
+1. `${.PVC.namespace}/${.PVC.name}`，注入 PVC 的 `metadata.namespace` 和 `metadata.name`，例如 `default/dynamic-pvc`。
+2. `${.PVC.labels.foo}`，注入 PVC 的 `metadata.labels["foo"]`。
+3. `${.PVC.annotations.bar}`，注入 PVC 的 `metadata.annotations["bar"]`。
 
 ## 常用 PV 设置
 
@@ -873,6 +980,15 @@ spec:
 ### 访问模式 {#access-modes}
 
 JuiceFS PV 支持 `ReadWriteMany` 和 `ReadOnlyMany` 两种访问方式。根据使用 CSI 驱动的方式不同，在上方 PV／PVC（或 `volumeClaimTemplate`）定义中，填写需要的 `accessModes` 即可。
+
+### 回收策略 {#reclaim-policy}
+
+静态配置下仅支持 `persistentVolumeReclaimPolicy: Retain`，无法随着删除回收。
+
+动态配置支持 `Delete|Retain` 两种回收策略，按需使用。`Delete` 会导致 JuiceFS 内的 PVC 子目录随着 PV 删除一起释放，如果担心数据安全，可以配合 JuiceFS 的回收站功能一起使用：
+
+* [社区版回收站文档](https://juicefs.com/docs/zh/community/security/trash)
+* [企业版回收站文档](https://juicefs.com/docs/zh/cloud/trash)
 
 ### 给 Mount Pod 挂载宿主机目录 {#mount-host-path}
 

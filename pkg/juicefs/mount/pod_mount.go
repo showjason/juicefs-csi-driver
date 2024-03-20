@@ -107,9 +107,9 @@ func (p *PodMount) GetMountRef(ctx context.Context, target, podName string) (int
 func (p *PodMount) UmountTarget(ctx context.Context, target, podName string) error {
 	// targetPath may be mount bind many times when mount point recovered.
 	// umount until it's not mounted.
-	klog.V(5).Infof("JfsUnmount: umount %s", target)
+	klog.V(5).Infof("JfsUnmount: lazy umount %s", target)
 	for {
-		command := exec.Command("umount", target)
+		command := exec.Command("umount", "-l", target)
 		out, err := command.CombinedOutput()
 		if err == nil {
 			continue
@@ -118,12 +118,8 @@ func (p *PodMount) UmountTarget(ctx context.Context, target, podName string) err
 		if !strings.Contains(string(out), "not mounted") &&
 			!strings.Contains(string(out), "mountpoint not found") &&
 			!strings.Contains(string(out), "no mount point specified") {
-			klog.V(5).Infof("Unmount %s failed: %q, try to lazy unmount", target, err)
-			output, err := exec.Command("umount", "-l", target).CombinedOutput()
-			if err != nil {
-				klog.V(5).Infof("Could not lazy unmount %q: %v, output: %s", target, err, string(output))
-				return err
-			}
+			klog.Errorf("Could not lazy unmount %q: %v, output: %s", target, err, string(out))
+			return err
 		}
 		break
 	}
@@ -368,12 +364,12 @@ func (p *PodMount) createOrAddRef(ctx context.Context, podName string, jfsSettin
 					}
 				}
 
+				if err := p.createOrUpdateSecret(ctx, &secret); err != nil {
+					return err
+				}
 				_, err = p.K8sClient.CreatePod(ctx, newPod)
 				if err != nil {
 					klog.Errorf("createOrAddRef: Create pod %s err: %v", podName, err)
-				}
-				if err := p.createOrUpdateSecret(ctx, &secret); err != nil {
-					return err
 				}
 				return err
 			} else if k8serrors.IsTimeout(err) {
@@ -395,6 +391,7 @@ func (p *PodMount) waitUtilMountReady(ctx context.Context, jfsSetting *jfsConfig
 	waitCtx, cancel := context.WithTimeout(ctx, 30*time.Second)
 	defer cancel()
 	// Wait until the mount point is ready
+	klog.V(5).Infof("waiting for mount point %v ready, mountpod: %s", jfsSetting.MountPath, podName)
 	for {
 		var finfo os.FileInfo
 		if err := util.DoWithTimeout(waitCtx, defaultCheckTimeout, func() (err error) {
@@ -404,18 +401,16 @@ func (p *PodMount) waitUtilMountReady(ctx context.Context, jfsSetting *jfsConfig
 			if err == context.Canceled || err == context.DeadlineExceeded {
 				break
 			}
-			klog.V(5).Infof("mount path %v not ready: %v", jfsSetting.MountPath, err)
+			klog.V(6).Infof("mount path %v not ready, mountpod: %s, err: %v", jfsSetting.MountPath, podName, err)
 			time.Sleep(time.Millisecond * 500)
 			continue
 		}
 		if st, ok := finfo.Sys().(*syscall.Stat_t); ok {
 			if st.Ino == 1 {
-				klog.V(5).Infof("Mount point %v is ready", jfsSetting.MountPath)
+				klog.V(5).Infof("Mount point %v is ready, mountpod: %s", jfsSetting.MountPath, podName)
 				return nil
 			}
-			klog.V(5).Infof("Mount point %v is not ready", jfsSetting.MountPath)
-		} else {
-			klog.V(5).Info("Cannot reach here")
+			klog.V(6).Infof("Mount point %v is not ready, mountpod: %s", jfsSetting.MountPath, podName)
 		}
 		time.Sleep(time.Millisecond * 500)
 	}
@@ -425,7 +420,7 @@ func (p *PodMount) waitUtilMountReady(ctx context.Context, jfsSetting *jfsConfig
 		klog.Errorf("Get pod %s log error %v", podName, err)
 		return fmt.Errorf("mount %v at %v failed: mount isn't ready in 30 seconds", util.StripPasswd(jfsSetting.Source), jfsSetting.MountPath)
 	}
-	return fmt.Errorf("mount %v at %v failed: %v", util.StripPasswd(jfsSetting.Source), jfsSetting.MountPath, log)
+	return fmt.Errorf("mount %v at %v failed, mountpod: %s, failed log: %v", util.StripPasswd(jfsSetting.Source), jfsSetting.MountPath, podName, log)
 }
 
 func (p *PodMount) waitUtilJobCompleted(ctx context.Context, jobName string) error {
@@ -529,10 +524,7 @@ func (p *PodMount) setMountLabel(ctx context.Context, uniqueId, mountPodName str
 		return err
 	}
 
-	klog.Infof("setMountAnnotation: set mount info %s/%s in pod %s", jfsConfig.Namespace, mountPodName, podName)
-	return util.AddPodAnnotation(ctx, p.K8sClient, pod, map[string]string{
-		fmt.Sprintf("%s-%s", jfsConfig.JuiceFSMountPod, uniqueId): fmt.Sprintf("%s/%s", jfsConfig.Namespace, mountPodName),
-	})
+	return nil
 }
 
 // GetJfsVolUUID get UUID from result of `juicefs status <volumeName>`
