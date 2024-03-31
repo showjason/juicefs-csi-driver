@@ -31,7 +31,7 @@ import {
 } from 'kubernetes-types/core/v1';
 import React, { useEffect, useState } from 'react';
 import { FormattedMessage, Link } from 'umi';
-import { formatData } from '../utils';
+import { formatData, getLocalTime } from '../utils';
 
 const DetailedPVC: React.FC<unknown> = () => {
     const location = useLocation();
@@ -150,6 +150,11 @@ const DetailedPVC: React.FC<unknown> = () => {
                                 title: <FormattedMessage id="createAt" />,
                                 key: 'time',
                                 dataIndex: 'time',
+                                render: (_, record) => (
+                                    <span>
+                                        {getLocalTime(record.time || '')}
+                                    </span>
+                                ),
                             },
                             {
                                 title: 'Yaml',

@@ -27,6 +27,7 @@ import {
 import { Button, Tooltip } from 'antd';
 import React, { useRef, useState } from 'react';
 import { Link } from 'umi';
+import { getLocalTime } from '../utils';
 
 const PVTable: React.FC<unknown> = () => {
     const [, handleModalVisible] = useState<boolean>(false);
@@ -153,13 +154,7 @@ const PVTable: React.FC<unknown> = () => {
             search: false,
             render: (_, pv) => (
                 <span>
-                    {new Date(
-                        pv.metadata?.creationTimestamp || '',
-                    ).toLocaleDateString('en-US', {
-                        hour: '2-digit',
-                        minute: '2-digit',
-                        second: '2-digit',
-                    })}
+                    {getLocalTime(pv.metadata?.creationTimestamp || '')}
                 </span>
             ),
         },

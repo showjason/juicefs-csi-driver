@@ -25,6 +25,7 @@ import { Button } from 'antd';
 import { StorageClass } from 'kubernetes-types/storage/v1';
 import React, { useRef, useState } from 'react';
 import { FormattedMessage, Link } from 'umi';
+import { getLocalTime } from '../utils';
 
 const SCTable: React.FC<unknown> = () => {
     const [, handleModalVisible] = useState<boolean>(false);
@@ -69,13 +70,7 @@ const SCTable: React.FC<unknown> = () => {
             search: false,
             render: (_, sc) => (
                 <span>
-                    {new Date(
-                        sc.metadata?.creationTimestamp || '',
-                    ).toLocaleDateString('en-US', {
-                        hour: '2-digit',
-                        minute: '2-digit',
-                        second: '2-digit',
-                    })}
+                    {getLocalTime(sc.metadata?.creationTimestamp || '')}
                 </span>
             ),
         },

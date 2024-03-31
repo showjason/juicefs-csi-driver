@@ -14,7 +14,7 @@
  limitations under the License.
  */
 
-import { getNodeStatusBadge } from '@/pages/utils';
+import { getLocalTime, getNodeStatusBadge } from '@/pages/utils';
 import { PodStatusEnum } from '@/services/common';
 import { Pod, getLog, getPod, podStatus } from '@/services/pod';
 import { DownloadOutlined, SyncOutlined } from '@ant-design/icons';
@@ -111,6 +111,13 @@ export const getPodTableContent = (
                         title: <FormattedMessage id="startAt" />,
                         dataIndex: ['metadata', 'creationTimestamp'],
                         key: 'startAt',
+                        render: (_, pod) => (
+                            <span>
+                                {getLocalTime(
+                                    pod.metadata?.creationTimestamp || '',
+                                )}
+                            </span>
+                        ),
                     },
                 ]}
                 dataSource={pods}
@@ -146,6 +153,9 @@ export const EventTable = (events: Event[]) => {
                         title: 'CreatedTime',
                         key: 'firstTimestamp',
                         dataIndex: 'firstTimestamp',
+                        render: (firstTimestamp) => (
+                            <span>{getLocalTime(firstTimestamp)}</span>
+                        ),
                     },
                     {
                         title: 'From',
@@ -342,6 +352,11 @@ const DetailedPod: React.FC<unknown> = () => {
                                 title: <FormattedMessage id="createAt" />,
                                 key: 'time',
                                 dataIndex: 'time',
+                                render: (_, record) => (
+                                    <span>
+                                        {getLocalTime(record.time || '')}
+                                    </span>
+                                ),
                             },
                             {
                                 title: 'Yaml',
@@ -387,6 +402,9 @@ const DetailedPod: React.FC<unknown> = () => {
                                 title: <FormattedMessage id="startAt" />,
                                 dataIndex: 'startAt',
                                 key: 'startAt',
+                                render: (startAt) => (
+                                    <span>{getLocalTime(startAt)}</span>
+                                ),
                             },
                             {
                                 title: <FormattedMessage id="log" />,

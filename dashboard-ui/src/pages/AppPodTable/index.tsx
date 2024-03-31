@@ -14,7 +14,11 @@
  limitations under the License.
  */
 
-import { getPVStatusBadge, getPodStatusBadge } from '@/pages/utils';
+import {
+    getLocalTime,
+    getPVStatusBadge,
+    getPodStatusBadge,
+} from '@/pages/utils';
 import { PodStatusEnum } from '@/services/common';
 import { Pod, listAppPods, podStatus } from '@/services/pod';
 import { AlertTwoTone } from '@ant-design/icons';
@@ -186,13 +190,7 @@ const AppPodTable: React.FC<unknown> = () => {
             search: false,
             render: (_, pod) => (
                 <span>
-                    {new Date(
-                        pod.metadata?.creationTimestamp || '',
-                    ).toLocaleDateString('en-US', {
-                        hour: '2-digit',
-                        minute: '2-digit',
-                        second: '2-digit',
-                    })}
+                    {getLocalTime(pod.metadata?.creationTimestamp || '')}
                 </span>
             ),
         },

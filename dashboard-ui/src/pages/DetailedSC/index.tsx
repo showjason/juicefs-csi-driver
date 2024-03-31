@@ -27,7 +27,7 @@ import { PersistentVolume } from 'kubernetes-types/core/v1';
 import { StorageClass } from 'kubernetes-types/storage/v1';
 import React, { useEffect, useState } from 'react';
 import { FormattedMessage } from 'umi';
-import { formatData } from '../utils';
+import { formatData, getLocalTime } from '../utils';
 
 const DetailedSC: React.FC<unknown> = () => {
     const location = useLocation();
@@ -95,6 +95,11 @@ const DetailedSC: React.FC<unknown> = () => {
                                 title: <FormattedMessage id="createAt" />,
                                 key: 'time',
                                 dataIndex: 'time',
+                                render: (_, record) => (
+                                    <span>
+                                        {getLocalTime(record.time || '')}
+                                    </span>
+                                ),
                             },
                             {
                                 title: 'Yaml',
@@ -177,6 +182,14 @@ const DetailedSC: React.FC<unknown> = () => {
                                 title: <FormattedMessage id="startStatus" />,
                                 dataIndex: ['metadata', 'creationTimestamp'],
                                 key: 'startAt',
+                                render: (_, pv) => (
+                                    <span>
+                                        {getLocalTime(
+                                            pv.metadata?.creationTimestamp ||
+                                                '',
+                                        )}
+                                    </span>
+                                ),
                             },
                         ]}
                         dataSource={pvs}
