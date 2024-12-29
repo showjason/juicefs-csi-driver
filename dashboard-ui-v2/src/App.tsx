@@ -15,11 +15,13 @@
  */
 
 import { loader } from '@monaco-editor/react'
-import { ConfigProvider } from 'antd'
+import { ConfigProvider, theme } from 'antd'
 import * as monaco from 'monaco-editor'
 import editorWorker from 'monaco-editor/esm/vs/editor/editor.worker?worker'
 import { BrowserRouter, Navigate, Route, Routes } from 'react-router-dom'
 import { SWRConfig } from 'swr'
+import useThemeStore from '@/hooks/use-theme'
+import { useEffect } from 'react'
 
 import { Layout, ResourceDetail, ResourceList } from '@/components'
 import ConfigDetail from '@/pages/config-detail'
@@ -41,41 +43,44 @@ self.MonacoEnvironment = {
 
 loader.config({ monaco })
 
-const App = () => (
-  <SWRConfig
-    value={{
-      fetcher,
-    }}
-  >
-    <ConfigProvider
-      theme={{
-        token: {
-          colorPrimary: '#00b96b',
-          borderRadius: 3,
-        },
-        components: {
-          Layout: {
-            headerBg: '#ffffff',
-          },
-        },
+const App = () => {
+  const { isDark } = useThemeStore()
+  
+  useEffect(() => {
+    document.documentElement.setAttribute(
+      'data-theme',
+      isDark ? 'dark' : 'light'
+    )
+  }, [isDark])
+  
+  return (
+    <SWRConfig
+      value={{
+        fetcher,
       }}
     >
-      <BrowserRouter basename={getBasePath()}>
-        <Layout>
-          <Routes>
-            <Route path="/" element={<Navigate replace to="/pods" />} />
-            <Route path="/:resources" element={<ResourceList />} />
-            <Route
-              path="/:resources/:namespace/:name"
-              element={<ResourceDetail />}
-            />
-            <Route path="/:resources/:name" element={<ResourceDetail />} />
-            <Route path="/config" element={<ConfigDetail />} />
-          </Routes>
-        </Layout>
-      </BrowserRouter>
-    </ConfigProvider>
-  </SWRConfig>
-)
+      <ConfigProvider
+        theme={{
+          algorithm: isDark ? theme.darkAlgorithm : theme.defaultAlgorithm,
+        }}
+      >
+        <BrowserRouter basename={getBasePath()}>
+          <Layout>
+            <Routes>
+              <Route path="/" element={<Navigate replace to="/pods" />} />
+              <Route path="/:resources" element={<ResourceList />} />
+              <Route
+                path="/:resources/:namespace/:name"
+                element={<ResourceDetail />}
+              />
+              <Route path="/:resources/:name" element={<ResourceDetail />} />
+              <Route path="/config" element={<ConfigDetail />} />
+            </Routes>
+          </Layout>
+        </BrowserRouter>
+      </ConfigProvider>
+    </SWRConfig>
+  )
+}
 
 export default App

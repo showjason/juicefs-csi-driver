@@ -23,6 +23,7 @@ import { useNavigate } from 'react-router-dom'
 import YAML, { YAMLParseError } from 'yaml'
 
 import { useConfig, useConfigDiff, useUpdateConfig } from '@/hooks/cm-api'
+import useThemeStore from '@/hooks/use-theme'
 
 const ConfigDetail = () => {
   const [updated, setUpdated] = useState(false)
@@ -34,6 +35,7 @@ const ConfigDetail = () => {
   const [diff, setDiff] = useState(false)
   const [error, setError] = useState('')
   const navigate = useNavigate()
+  const { isDark } = useThemeStore()
 
   useEffect(() => {
     if (diffPods && diffPods.length > 0) {
@@ -172,7 +174,7 @@ const ConfigDetail = () => {
           height="calc(100vh - 200px)"
           options={{
             wordWrap: 'on',
-            theme: 'vs-light', // TODO dark mode
+            theme: isDark ? 'vs-dark' : 'vs-light',
             scrollBeyondLastLine: false,
           }}
           value={config}

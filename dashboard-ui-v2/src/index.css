@@ -27,6 +27,25 @@
   text-rendering: optimizeLegibility;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+
+  /* Light mode by default */
+  --background-color: #f5f5f5;
+  --text-color: rgba(0, 0, 0, 0.87);
+  --border-color: #f4f5f6;
+  --bg-color: #ffffff;
+  --text-color: rgba(0, 0, 0, 0.88);
+  --header-bg: #fff;
+  --header-color: rgba(0, 0, 0, 0.88);
+}
+
+:root[data-theme='dark'] {
+  --background-color: #1f1f1f;
+  --text-color: rgba(255, 255, 255, 0.87);
+  --border-color: #2f2f2f;
+  --bg-color: #141414;
+  --text-color: rgba(255, 255, 255, 0.85);
+  --header-bg: #141414;
+  --header-color: #fff;
 }
 
 body {
@@ -35,6 +54,8 @@ body {
     align-items: center;
     min-width: 100%;
     min-height: 100vh; */
+  background-color: var(--bg-color);
+  color: var(--text-color);
 }
 
 .ant-page-header {
@@ -97,6 +118,7 @@ body {
   height: 24px;
   border-color: transparent;
   box-shadow: none;
+  color: var(--text-color);
 }
 
 .action-button {

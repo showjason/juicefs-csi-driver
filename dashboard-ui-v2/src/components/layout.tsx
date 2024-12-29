@@ -28,15 +28,17 @@ import {
   MenuProps,
   Space,
   Tooltip,
+  theme,
 } from 'antd'
 import enUS from 'antd/locale/en_US'
 import zhCN from 'antd/locale/zh_CN'
 import { FormattedMessage, IntlProvider } from 'react-intl'
 import { Link, useLocation } from 'react-router-dom'
 
-import { LocaleIcon, ResourcesIcon } from '@/icons'
+import { LocaleIcon, ResourcesIcon, ThemeIcon } from '@/icons'
 import en from '@/locales/en-US'
 import cn from '@/locales/zh-CN'
+import useThemeStore from '@/hooks/use-theme'
 
 const { Header, Sider, Content } = AntdLayout
 
@@ -113,6 +115,7 @@ const items: MenuProps['items'] = [
 export default function Layout(props: { children: ReactNode }) {
   const [locale, setLocale] = useState<string>()
   const location = useLocation()
+  const { isDark, toggleTheme } = useThemeStore()
 
   useEffect(() => {
     if (locale) {
@@ -127,94 +130,98 @@ export default function Layout(props: { children: ReactNode }) {
 
   return (
     <IntlProvider messages={locale == 'zh' ? cn : en} locale={locale ?? 'zh'}>
-      <AntdLayout>
-        <Header
-          style={{
-            position: 'fixed',
-            top: 0,
-            zIndex: 1,
-            width: '100%',
-            display: 'flex',
-            alignItems: 'center',
-            fontSize: '14px',
-            padding: '0 20px',
-          }}
-        >
-          <h2>JuiceFS CSI</h2>
-          <Space size={'middle'} style={{ marginLeft: 'auto' }}>
-            <Tooltip title="Docs">
+      <ConfigProvider
+        theme={{
+          algorithm: isDark ? theme.darkAlgorithm : theme.defaultAlgorithm,
+        }}
+      >
+        <AntdLayout>
+          <Header
+            style={{
+              position: 'fixed',
+              top: 0,
+              zIndex: 1,
+              width: '100%',
+              display: 'flex',
+              alignItems: 'center',
+              fontSize: '14px',
+              padding: '0 20px',
+              backgroundColor: 'var(--header-bg)',
+              color: 'var(--header-color)',
+            }}
+          >
+            <h2>JuiceFS CSI</h2>
+            <Space size={'middle'} style={{ marginLeft: 'auto' }}>
+              <Tooltip title={isDark ? 'Light' : 'Dark'}>
+                <Button
+                  icon={<ThemeIcon />}
+                  className="header-button"
+                  onClick={toggleTheme}
+                />
+              </Tooltip>
+              <Tooltip title="Docs">
+                <Button
+                  icon={<QuestionCircleOutlined />}
+                  className="header-button"
+                  onClick={() => {
+                    window.open(
+                      'https://juicefs.com/docs/csi/introduction/',
+                      '_blank',
+                    )
+                  }}
+                />
+              </Tooltip>
+              <Tooltip title="English / 中文">
+                <Button
+                  icon={<LocaleIcon />}
+                  className="header-button"
+                  onClick={() => {
+                    setLocale(locale === 'zh' ? 'en' : 'zh')
+                  }}
+                />
+              </Tooltip>
               <Button
-                icon={<QuestionCircleOutlined />}
+                icon={<GithubOutlined />}
                 className="header-button"
                 onClick={() => {
-                  // open a new tab to the JuiceFS CSI documentation
                   window.open(
-                    'https://juicefs.com/docs/csi/introduction/',
+                    'https://github.com/juicedata/juicefs-csi-driver',
                     '_blank',
                   )
                 }}
               />
-            </Tooltip>
-            <Tooltip title="English / 中文">
-              <Button
-                icon={<LocaleIcon />}
-                className="header-button"
-                onClick={() => {
-                  setLocale(locale === 'zh' ? 'en' : 'zh')
+            </Space>
+          </Header>
+          <ConfigProvider locale={locale == 'zh' ? zhCN : enUS}>
+            <AntdLayout hasSider>
+              <Sider
+                style={{
+                  overflow: 'auto',
+                  height: '100vh',
+                  position: 'fixed',
+                  marginTop: '64px',
                 }}
-              />
-            </Tooltip>
-            <Button
-              icon={<GithubOutlined />}
-              className="header-button"
-              onClick={() => {
-                window.open(
-                  'https://github.com/juicedata/juicefs-csi-driver',
-                  '_blank',
-                )
-              }}
-            />
-          </Space>
-        </Header>
-        <ConfigProvider locale={locale == 'zh' ? zhCN : enUS}>
-          <AntdLayout hasSider>
-            <Sider
-              style={{
-                overflow: 'auto',
-                height: '100vh',
-                position: 'fixed',
-                marginTop: '64px',
-              }}
-              width={220}
-            >
-              <Menu
-                mode="inline"
-                selectedKeys={[
-                  location.pathname == '/'
-                    ? '/pods'
-                    : `/${location.pathname.split('/')[1]}`,
-                ]}
-                defaultOpenKeys={['resources', 'tools']}
-                style={{ height: '100%', width: '100%' }}
-                items={items}
-              />
-            </Sider>
-          </AntdLayout>
-          <AntdLayout style={{ marginLeft: 220, marginTop: '64px' }}>
-            <ConfigProvider
-              theme={{
-                token: {
-                  colorPrimary: '#00b96b',
-                  borderRadius: 4,
-                  colorBgContainer: '#ffffff',
-                },
-              }}
-            >
-              <Content>{props.children}</Content>
-            </ConfigProvider>
-          </AntdLayout>
-        </ConfigProvider>
-      </AntdLayout>
+                width={220}
+              >
+                <Menu
+                  mode="inline"
+                  selectedKeys={[
+                    location.pathname == '/'
+                      ? '/pods'
+                      : `/${location.pathname.split('/')[1]}`,
+                  ]}
+                  defaultOpenKeys={['resources', 'tools']}
+                  style={{ height: '100%', width: '100%' }}
+                  items={items}
+                />
+              </Sider>
+              <AntdLayout style={{ marginLeft: 220, marginTop: '64px' }}>
+                <Content>{props.children}</Content>
+              </AntdLayout>
+            </AntdLayout>
+          </ConfigProvider>
+        </AntdLayout>
+      </ConfigProvider>
     </IntlProvider>
   )
 }
