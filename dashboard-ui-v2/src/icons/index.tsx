@@ -28,6 +28,8 @@ import SC from '@/assets/sc-256.png'
 
 type CustomIconComponentProps = GetProps<typeof Icon>
 
+type ThemedIconProps = Partial<CustomIconComponentProps> & { isDark?: boolean }
+
 const DSIcon = (props: Partial<CustomIconComponentProps>) => (
   <Icon
     component={() => <img width={props.width ?? 18} src={DS} />}
@@ -81,39 +83,46 @@ const LocaleIcon = (props: Partial<CustomIconComponentProps>) => (
   />
 )
 
-const TerminalIcon = (props: Partial<CustomIconComponentProps>) => (
+const withThemeColor = (IconComponent: React.FC<ThemedIconProps>) => {
+  return (props: Partial<CustomIconComponentProps>) => {
+    const { isDark } = useThemeStore()
+    return <IconComponent {...props} isDark={isDark} />
+  }
+}
+
+const TerminalIcon = withThemeColor((props: Partial<CustomIconComponentProps> & { isDark?: boolean }) => (
   <Icon
     component={() => (
       <svg viewBox="0 0 1024 1024" width="1em" height="1em">
         <path
           d="M93.568 984.234667c-12.416 0-23.296-4.650667-32.64-13.994667-18.645333-18.645333-18.645333-48.213333 0-65.28l388.693333-388.693333-388.693333-388.693334c-18.645333-18.645333-18.645333-48.213333 0-65.28 18.645333-18.645333 48.213333-18.645333 65.28 0l421.333333 421.333334c18.688 18.645333 18.688 48.213333 0 65.28L126.208 970.24a44.757333 44.757333 0 0 1-32.64 13.994667zM934.698667 982.698667h-419.797334c-26.453333 0-46.634667-20.224-46.634666-46.634667 0-26.453333 20.224-46.634667 46.634666-46.634667h419.797334c26.453333 0 46.634667 20.181333 46.634666 46.634667s-20.224 46.634667-46.634666 46.634667z"
-          fill="currentColor"
+          fill={props.isDark ? '#ffffff' : '#000000'}
         />
       </svg>
     )}
     {...props}
   />
-)
+))
 
-const LogIcon = (props: Partial<CustomIconComponentProps>) => (
+const LogIcon = withThemeColor((props: Partial<CustomIconComponentProps> & { isDark?: boolean }) => (
   <Icon
     component={() => (
       <svg viewBox="0 0 1099 1024" width="16" height="16">
         <path
           d="M733.129568 1.700997H1.700997v1020.598006h1020.598006v-765.448505z m204.119601 935.548172h-850.498338v-850.498338h614.910299l235.588039 206.671096z"
-          fill="#4F4A4A"
+          fill={props.isDark ? '#ffffff' : '#4F4A4A'}
           p-id="4314"
         ></path>
         <path
           d="M170.099668 171.800664h279.813953v85.049834H170.099668zM170.099668 372.518272h683.800664v85.049834H170.099668zM170.099668 567.282392h683.800664v85.049834H170.099668zM170.099668 762.046512h683.800664v85.049834H170.099668z"
-          fill="#4F4A4A"
+          fill={props.isDark ? '#ffffff' : '#4F4A4A'}
           p-id="4315"
         ></path>
       </svg>
     )}
     {...props}
   />
-)
+))
 
 const AccessLogIcon = (props: Partial<CustomIconComponentProps>) => (
   <Icon

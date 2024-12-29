@@ -16,8 +16,7 @@
 
 import React from 'react'
 import { ProCard } from '@ant-design/pro-components'
-import { Table } from 'antd'
-import { Badge } from 'antd/lib'
+import { Badge, Table } from 'antd'
 import { FormattedMessage } from 'react-intl'
 import { Link } from 'react-router-dom'
 

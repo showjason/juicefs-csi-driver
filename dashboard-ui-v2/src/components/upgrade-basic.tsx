@@ -16,8 +16,7 @@
 
 import React, { useEffect, useState } from 'react'
 import { ProCard, ProDescriptions } from '@ant-design/pro-components'
-import { Button, Space, Tooltip } from 'antd'
-import { Badge } from 'antd/lib'
+import { Badge, Button, Space, Tooltip } from 'antd'
 import { FormattedMessage } from 'react-intl'
 import { Link } from 'react-router-dom'
 

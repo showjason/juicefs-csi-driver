@@ -17,8 +17,7 @@
 import React, { useState } from 'react'
 import { PlusOutlined } from '@ant-design/icons'
 import { PageContainer, ProColumns, ProTable } from '@ant-design/pro-components'
-import { Button, TablePaginationConfig, TableProps } from 'antd'
-import { Badge } from 'antd/lib'
+import { Badge, Button, TablePaginationConfig, TableProps } from 'antd'
 import { FormattedMessage } from 'react-intl'
 import { Link, useSearchParams } from 'react-router-dom'
 

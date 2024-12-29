@@ -17,8 +17,7 @@
 import React, { useEffect, useState } from 'react'
 import { AlertTwoTone } from '@ant-design/icons'
 import { PageContainer, ProColumns, ProTable } from '@ant-design/pro-components'
-import { Tooltip, type TablePaginationConfig, type TableProps } from 'antd'
-import { Badge } from 'antd/lib'
+import { Badge, Tooltip, type TablePaginationConfig, type TableProps } from 'antd'
 import { FormattedMessage } from 'react-intl'
 import { Link } from 'react-router-dom'
 

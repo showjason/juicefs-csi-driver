@@ -16,8 +16,7 @@
 
 import React, { useEffect, useState } from 'react'
 import { ProCard } from '@ant-design/pro-components'
-import { Button, Popover, Table, TableProps, Tooltip } from 'antd'
-import { Badge } from 'antd/lib'
+import { Badge, Button, Popover, Table, TableProps, Tooltip } from 'antd'
 import ReactDiffViewer from 'react-diff-viewer'
 import { FormattedMessage } from 'react-intl'
 import { Link } from 'react-router-dom'

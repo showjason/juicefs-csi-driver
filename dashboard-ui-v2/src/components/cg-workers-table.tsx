@@ -32,8 +32,8 @@ import {
   TablePaginationConfig,
   TableProps,
   Tooltip,
+  Badge,
 } from 'antd'
-import { Badge } from 'antd/lib'
 import { FormattedMessage } from 'react-intl'
 import { Link } from 'react-router-dom'
 
