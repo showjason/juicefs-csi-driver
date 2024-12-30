@@ -143,4 +143,6 @@ export default {
   upgradeLog: '升级日志',
   jobNotFound: '任务找不到',
   jobName: '任务名',
+  light: '浅色模式',
+  dark: '暗黑模式',
 }

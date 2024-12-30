@@ -148,4 +148,6 @@ export default {
   upgradeLog: 'Upgrade Log',
   jobNotFound: 'Task not found',
   inputJobName: 'Job Name',
+  light: 'Light Mode',
+  dark: 'Dark Mode',
 }

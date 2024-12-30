@@ -152,14 +152,22 @@ export default function Layout(props: { children: ReactNode }) {
           >
             <h2>JuiceFS CSI</h2>
             <Space size={'middle'} style={{ marginLeft: 'auto' }}>
-              <Tooltip title={isDark ? 'Light' : 'Dark'}>
+              <Tooltip 
+                title={
+                  <FormattedMessage 
+                    id={isDark ? 'light' : 'dark'} 
+                  />
+                }
+              >
                 <Button
                   icon={<ThemeIcon />}
                   className="header-button"
                   onClick={toggleTheme}
                 />
               </Tooltip>
-              <Tooltip title="Docs">
+              <Tooltip 
+                title={<FormattedMessage id="docs" />}
+              >
                 <Button
                   icon={<QuestionCircleOutlined />}
                   className="header-button"

@@ -125,3 +125,23 @@ body {
   border-color: #f4f5f6;
   box-shadow: none;
 }
+
+/* 设置页面容器高度 */
+.ant-pro-page-container {
+  height: 100%;
+}
+
+/* 确保内容区域在暗色主题下也能正确显示 */
+.ant-layout {
+  background: transparent;  /* 使用透明背景 */
+}
+
+/* 暗色主题下的背景色处理 */
+[data-theme='dark'] .ant-layout {
+  background: #141414;  /* 使用 Ant Design 暗色主题的背景色 */
+}
+
+/* 确保内容区域填充整个可用空间 */
+.ant-pro-page-container-children-content {
+  height: 100%;
+}

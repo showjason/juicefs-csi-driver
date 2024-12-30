@@ -16,7 +16,7 @@
 
 import React from 'react'
 import { PageContainer, ProCard } from '@ant-design/pro-components'
-import { ConfigProvider, List } from 'antd'
+import { List } from 'antd'
 import { FormattedMessage } from 'react-intl'
 
 import PVsTable from '@/components/pvs-table.tsx'
@@ -41,50 +41,40 @@ const SCDetail: React.FC<{
   }
 
   return (
-    <ConfigProvider
-      theme={{
-        token: {
-          colorPrimary: '#00b96b',
-          borderRadius: 4,
-          colorBgContainer: '#ffffff',
-        },
+    <PageContainer
+      fixedHeader
+      loading={isLoading}
+      header={{
+        title: name,
       }}
     >
-      <PageContainer
-        fixedHeader
-        loading={isLoading}
-        header={{
-          title: name,
-        }}
-      >
-        <SCBasic sc={data} />
-        <ProCard title={<FormattedMessage id="parameters" />}>
-          <List
-            dataSource={scParameter(data)}
-            split={false}
-            size="small"
-            renderItem={(item) => (
-              <List.Item>
-                <code>{item}</code>
-              </List.Item>
-            )}
-          />
-        </ProCard>
-        <ProCard title={<FormattedMessage id="mountOptions" />}>
-          <List
-            dataSource={data.mountOptions}
-            split={false}
-            size="small"
-            renderItem={(item) => (
-              <List.Item>
-                <code>{item}</code>
-              </List.Item>
-            )}
-          />
-        </ProCard>
-        <PVsTable sc={data.metadata?.name || ''} />
-      </PageContainer>
-    </ConfigProvider>
+      <SCBasic sc={data} />
+      <ProCard title={<FormattedMessage id="parameters" />}>
+        <List
+          dataSource={scParameter(data)}
+          split={false}
+          size="small"
+          renderItem={(item) => (
+            <List.Item>
+              <code>{item}</code>
+            </List.Item>
+          )}
+        />
+      </ProCard>
+      <ProCard title={<FormattedMessage id="mountOptions" />}>
+        <List
+          dataSource={data.mountOptions}
+          split={false}
+          size="small"
+          renderItem={(item) => (
+            <List.Item>
+              <code>{item}</code>
+            </List.Item>
+          )}
+        />
+      </ProCard>
+      <PVsTable sc={data.metadata?.name || ''} />
+    </PageContainer>
   )
 }
 
