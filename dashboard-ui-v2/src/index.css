@@ -30,10 +30,9 @@
 
   /* Light mode by default */
   --background-color: #f5f5f5;
-  --text-color: rgba(0, 0, 0, 0.87);
+  --text-color: rgba(0, 0, 0, 0.88);
   --border-color: #f4f5f6;
   --bg-color: #ffffff;
-  --text-color: rgba(0, 0, 0, 0.88);
   --header-bg: #fff;
   --header-color: rgba(0, 0, 0, 0.88);
 }
@@ -43,7 +42,6 @@
   --text-color: rgba(255, 255, 255, 0.87);
   --border-color: #2f2f2f;
   --bg-color: #141414;
-  --text-color: rgba(255, 255, 255, 0.85);
   --header-bg: #141414;
   --header-color: #fff;
 }
@@ -126,22 +124,32 @@ body {
   box-shadow: none;
 }
 
-/* 设置页面容器高度 */
-.ant-pro-page-container {
-  height: 100%;
-}
-
-/* 确保内容区域在暗色主题下也能正确显示 */
 .ant-layout {
-  background: transparent;  /* 使用透明背景 */
+  min-height: 100vh !important;
+  background: transparent;
 }
 
-/* 暗色主题下的背景色处理 */
 [data-theme='dark'] .ant-layout {
-  background: #141414;  /* 使用 Ant Design 暗色主题的背景色 */
+  background: #141414;
 }
 
-/* 确保内容区域填充整个可用空间 */
+.ant-layout-content {
+  flex: 1;
+  background: transparent;
+  display: flex;
+  flex-direction: column;
+}
+
+[data-theme='dark'] .ant-layout-content {
+  background: #141414;
+}
+
+.ant-pro-page-container {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+}
+
 .ant-pro-page-container-children-content {
-  height: 100%;
+  flex: 1;
 }
