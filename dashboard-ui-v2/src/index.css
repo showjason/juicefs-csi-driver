@@ -153,3 +153,36 @@ body {
 .ant-pro-page-container-children-content {
   flex: 1;
 }
+
+.ant-pro-table {
+  background: transparent;
+}
+
+.ant-table {
+  background: transparent;
+}
+
+.ant-pro-card {
+  background: transparent;
+}
+
+[data-theme='light'] .ant-table,
+[data-theme='light'] .ant-pro-card,
+[data-theme='light'] .ant-pro-table {
+  background: #ffffff;
+}
+
+[data-theme='dark'] .ant-table,
+[data-theme='dark'] .ant-pro-card,
+[data-theme='dark'] .ant-pro-table {
+  background: #141414;
+}
+
+.ant-pro-table-list-toolbar-title,
+.ant-pro-card-title {
+  color: var(--text-color) !important;
+}
+
+.ant-pro-page-container-title {
+  color: var(--text-color) !important;
+}
