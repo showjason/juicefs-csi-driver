@@ -72,32 +72,21 @@ body {
   height: calc(100vh - 110px);
 }
 
-.add-worker-modal {
+.add-worker-modal,
+.batch-upgrade-modal {
   width: unset !important;
 }
 
 .add-worker-modal .ant-modal,
 .add-worker-modal .ant-modal-content,
-.add-worker-modal .ant-modal-body {
-  height: unset;
-  top: 100px;
-  margin: unset;
-  max-width: fit-content;
-  margin: auto;
-}
-
-.batch-upgrade-modal {
-  width: unset !important;
-}
-
+.add-worker-modal .ant-modal-body,
 .batch-upgrade-modal .ant-modal,
 .batch-upgrade-modal .ant-modal-content,
 .batch-upgrade-modal .ant-modal-body {
   height: unset;
   top: 100px;
-  margin: unset;
-  width: fit-content;
   margin: auto;
+  width: fit-content;
 }
 
 .diff-pods-table {
@@ -111,17 +100,16 @@ body {
   height: calc(100vh - 110px) !important;
 }
 
+.header-button,
+.action-button {
+  border-color: transparent;
+  box-shadow: none;
+}
+
 .header-button {
   width: 24px;
   height: 24px;
-  border-color: transparent;
-  box-shadow: none;
   color: var(--text-color);
-}
-
-.action-button {
-  border-color: #f4f5f6;
-  box-shadow: none;
 }
 
 .ant-layout {
@@ -179,10 +167,13 @@ body {
 }
 
 .ant-pro-table-list-toolbar-title,
-.ant-pro-card-title {
+.ant-pro-card-title,
+.ant-pro-page-container-title,
+.ant-pro-page-container-header-title {
   color: var(--text-color) !important;
 }
 
-.ant-pro-page-container-title {
+.ant-page-header-heading-title,
+.ant-page-header-heading {
   color: var(--text-color) !important;
 }
