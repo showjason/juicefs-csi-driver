@@ -38,7 +38,7 @@ import { Link, useLocation } from 'react-router-dom'
 import { LocaleIcon, ResourcesIcon, ThemeIcon } from '@/icons'
 import en from '@/locales/en-US'
 import cn from '@/locales/zh-CN'
-import useThemeStore from '@/hooks/use-theme'
+import useThemeStore from '@/hooks/theme-api'
 
 const { Header, Sider, Content } = AntdLayout
 

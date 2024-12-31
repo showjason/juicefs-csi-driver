@@ -16,7 +16,7 @@
 
 import Icon from '@ant-design/icons'
 import type { GetProps } from 'antd'
-import useThemeStore from '@/hooks/use-theme'
+import useThemeStore from '@/hooks/theme-api'
 
 import CM from '@/assets/cm-256.png'
 import DS from '@/assets/ds-256.png'

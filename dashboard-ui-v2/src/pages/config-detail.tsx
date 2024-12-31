@@ -23,7 +23,7 @@ import { useNavigate } from 'react-router-dom'
 import YAML, { YAMLParseError } from 'yaml'
 
 import { useConfig, useConfigDiff, useUpdateConfig } from '@/hooks/cm-api'
-import useThemeStore from '@/hooks/use-theme'
+import useThemeStore from '@/hooks/theme-api'
 
 const ConfigDetail = () => {
   const [updated, setUpdated] = useState(false)

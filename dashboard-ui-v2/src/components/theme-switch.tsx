@@ -1,5 +1,5 @@
 import { Button } from 'antd'
-import useThemeStore from '@/hooks/use-theme'
+import useThemeStore from '@/hooks/theme-api'
 import { ThemeIcon } from '@/icons'
 
 const ThemeSwitch = () => {

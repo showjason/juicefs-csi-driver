@@ -20,7 +20,7 @@ import * as monaco from 'monaco-editor'
 import editorWorker from 'monaco-editor/esm/vs/editor/editor.worker?worker'
 import { BrowserRouter, Navigate, Route, Routes } from 'react-router-dom'
 import { SWRConfig } from 'swr'
-import useThemeStore from '@/hooks/use-theme'
+import useThemeStore from '@/hooks/theme-api'
 import { useEffect } from 'react'
 
 import { Layout, ResourceDetail, ResourceList } from '@/components'
