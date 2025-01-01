@@ -100,13 +100,8 @@ body {
   height: calc(100vh - 110px) !important;
 }
 
-.header-button,
-.action-button {
-  border-color: transparent;
-  box-shadow: none;
-}
-
 .header-button {
+  border-color: transparent;
   width: 24px;
   height: 24px;
   color: var(--text-color);
@@ -176,4 +171,21 @@ body {
 .ant-page-header-heading-title,
 .ant-page-header-heading {
   color: var(--text-color) !important;
+}
+
+/* 确保主题切换时样式同步 */
+[data-theme='light'] .ant-pro-page-container-warp,
+[data-theme='light'] .ant-pro-page-container-ghost {
+  background: #ffffff !important;
+}
+
+[data-theme='dark'] .ant-pro-page-container-warp,
+[data-theme='dark'] .ant-pro-page-container-ghost {
+  background: #141414 !important;
+}
+
+/* 过渡效果，使主题切换更平滑 */
+.ant-pro-page-container-warp,
+.ant-pro-page-container-ghost {
+  transition: background-color 0.3s;
 }
