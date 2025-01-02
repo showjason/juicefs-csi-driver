@@ -72,21 +72,32 @@ body {
   height: calc(100vh - 110px);
 }
 
-.add-worker-modal,
-.batch-upgrade-modal {
+.add-worker-modal {
   width: unset !important;
 }
 
 .add-worker-modal .ant-modal,
 .add-worker-modal .ant-modal-content,
-.add-worker-modal .ant-modal-body,
+.add-worker-modal .ant-modal-body {
+  height: unset;
+  top: 100px;
+  margin: unset;
+  max-width: fit-content;
+  margin: auto;
+}
+
+.batch-upgrade-modal {
+  width: unset !important;
+}
+
 .batch-upgrade-modal .ant-modal,
 .batch-upgrade-modal .ant-modal-content,
 .batch-upgrade-modal .ant-modal-body {
   height: unset;
   top: 100px;
-  margin: auto;
+  margin: unset;
   width: fit-content;
+  margin: auto;
 }
 
 .diff-pods-table {
@@ -101,10 +112,16 @@ body {
 }
 
 .header-button {
-  border-color: transparent;
   width: 24px;
   height: 24px;
+  border-color: transparent;
   color: var(--text-color);
+  box-shadow: none;
+}
+
+.action-button {
+  border-color: #f4f5f6;
+  box-shadow: none;
 }
 
 .ant-layout {
@@ -116,12 +133,12 @@ body {
   background: #141414;
 }
 
-.ant-layout-content {
+/* .ant-layout-content {
   flex: 1;
   background: transparent;
   display: flex;
   flex-direction: column;
-}
+} */
 
 [data-theme='dark'] .ant-layout-content {
   background: #141414;
