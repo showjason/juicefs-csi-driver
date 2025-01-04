@@ -126,7 +126,6 @@ body {
 
 .ant-layout {
   min-height: 100vh !important;
-  /* background: transparent; */
 }
 
 /* [data-theme='dark'] .ant-layout {
@@ -138,7 +137,7 @@ body {
   background: transparent;
   display: flex;
   flex-direction: column;
-} */
+}  */
 
 /* [data-theme='dark'] .ant-layout-content {
   background: #141414;
