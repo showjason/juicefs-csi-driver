@@ -154,11 +154,11 @@ body {
   flex: 1;
 }
 
-/* .ant-pro-table,
+.ant-pro-table,
 .ant-table,
 .ant-pro-card {
   background: transparent;
-} */
+}
 
 [data-theme='light'] .ant-table,
 [data-theme='light'] .ant-pro-card,
