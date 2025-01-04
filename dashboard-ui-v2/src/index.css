@@ -128,16 +128,17 @@ body {
   min-height: 100vh !important;
 }
 
-/* [data-theme='dark'] .ant-layout {
+[data-theme='dark'] .ant-layout {
   background: #141414;
-} */
+}
 
-/* .ant-layout-content {
+.ant-layout-content {
   flex: 1;
   background: transparent;
   display: flex;
   flex-direction: column;
-}  */
+  padding: 24px !important;
+} 
 
 /* [data-theme='dark'] .ant-layout-content {
   background: #141414;
@@ -159,7 +160,7 @@ body {
   background: transparent;
 } */
 
-/* [data-theme='light'] .ant-table,
+[data-theme='light'] .ant-table,
 [data-theme='light'] .ant-pro-card,
 [data-theme='light'] .ant-pro-table {
   background: #ffffff;
@@ -169,7 +170,7 @@ body {
 [data-theme='dark'] .ant-pro-card,
 [data-theme='dark'] .ant-pro-table {
   background: #141414;
-} */
+}
 
 .ant-pro-table-list-toolbar-title,
 .ant-pro-card-title,
@@ -199,3 +200,20 @@ body {
 .ant-pro-page-container-ghost {
   transition: background-color 0.3s;
 }
+
+/* 覆盖 ProTable 相关样式 */
+/* .ant-pro-table {
+  --ant-color-bg-container: var(--ant-bg-elevated);
+  
+  .ant-pro-card {
+    background-color: var(--ant-color-bg-container);
+  }
+
+  .ant-pro-table-search {
+    background-color: var(--ant-color-bg-container);
+  }
+
+  .ant-table {
+    background-color: var(--ant-color-bg-container);
+  }
+} */

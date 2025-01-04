@@ -133,7 +133,16 @@ export default function Layout(props: { children: ReactNode }) {
       <ConfigProvider
         theme={{
           algorithm: isDark ? theme.darkAlgorithm : theme.defaultAlgorithm,
+          components: {
+            Table: {
+              colorBgContainer: isDark ? '#141414' : '#ffffff',
+            },
+            Card: {
+              colorBgContainer: isDark ? '#141414' : '#ffffff',
+            }
+          }
         }}
+        locale={locale == 'zh' ? zhCN : enUS}
       >
         <AntdLayout>
           <Header
@@ -146,8 +155,8 @@ export default function Layout(props: { children: ReactNode }) {
               alignItems: 'center',
               fontSize: '14px',
               padding: '0 20px',
-              backgroundColor: 'var(--header-bg)',
-              color: 'var(--header-color)',
+              backgroundColor: 'var(--ant-bg-elevated)',
+              color: 'var(--ant-color-text)',
             }}
           >
             <h2>JuiceFS CSI</h2>
@@ -196,34 +205,37 @@ export default function Layout(props: { children: ReactNode }) {
               />
             </Space>
           </Header>
-          <ConfigProvider locale={locale == 'zh' ? zhCN : enUS}>
-            <AntdLayout hasSider>
-              <Sider
-                style={{
-                  overflow: 'auto',
-                  height: '100vh',
-                  position: 'fixed',
-                  marginTop: '64px',
+          <AntdLayout hasSider>
+            <Sider
+              style={{
+                overflow: 'auto',
+                height: '100vh',
+                position: 'fixed',
+                marginTop: '64px',
+                backgroundColor: 'var(--ant-bg-elevated)',
+              }}
+              width={220}
+            >
+              <Menu
+                mode="inline"
+                selectedKeys={[
+                  location.pathname == '/'
+                    ? '/pods'
+                    : `/${location.pathname.split('/')[1]}`,
+                ]}
+                defaultOpenKeys={['resources', 'tools']}
+                style={{ 
+                  height: '100%', 
+                  width: '100%',
+                  backgroundColor: 'var(--ant-bg-elevated)'
                 }}
-                width={220}
-              >
-                <Menu
-                  mode="inline"
-                  selectedKeys={[
-                    location.pathname == '/'
-                      ? '/pods'
-                      : `/${location.pathname.split('/')[1]}`,
-                  ]}
-                  defaultOpenKeys={['resources', 'tools']}
-                  style={{ height: '100%', width: '100%' }}
-                  items={items}
-                />
-              </Sider>
-              <AntdLayout style={{ marginLeft: 220, marginTop: '64px' }}>
-                <Content>{props.children}</Content>
-              </AntdLayout>
+                items={items}
+              />
+            </Sider>
+            <AntdLayout style={{ marginLeft: 220, marginTop: '64px' }}>
+              <Content>{props.children}</Content>
             </AntdLayout>
-          </ConfigProvider>
+          </AntdLayout>
         </AntdLayout>
       </ConfigProvider>
     </IntlProvider>
