@@ -152,7 +152,9 @@ export default function Layout(props: { children: ReactNode }) {
           >
             <h2>JuiceFS CSI</h2>
             <Space size={'middle'} style={{ marginLeft: 'auto' }}>
-              <Tooltip title={isDark ? '浅色模式' : '深色模式'}>
+              <Tooltip 
+                title={<FormattedMessage id={isDark ? 'light' : 'dark'} />}
+              >
                 <Button
                   icon={<ThemeIcon />}
                   className="header-button"
