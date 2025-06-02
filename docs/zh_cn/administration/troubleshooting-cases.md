@@ -23,7 +23,7 @@ kubernetes.io/csi: attacher.MountDevice failed to create newCsiDriverClient: dri
 
   ```shell
   # kubelet 根目录
-  ps -ef | grep kubelet | grep root-dir 
+  ps -ef | grep kubelet | grep root-dir
   # CSI Node 配置
   kubectl -n kube-system get ds juicefs-csi-node -oyaml | grep csi.juicefs.com
   ```
@@ -153,6 +153,10 @@ kubectl get pod -o jsonpath='{..containers[0].command}' $MOUNT_POD_NAME
   - 重启 kubelet
   - 升级 Kubernetes
 
+  如果你的 Kubernetes 版本高于这些版本，但仍然遇到这个问题，检查是否是同一个 Pod 挂载了多个相同 volumeHandle 的 PV，这也会导致挂 CSI 无法正常收到请求。详见 [#91556](https://github.com/kubernetes/kubernetes/issues/91556)。
+
+  建议你开启 [validation webhook](./going-production.md#enable-validating-webhook)，确保在创建 PV 时就能检查到这个问题。
+
   总之 JuiceFS CSI 驱动需要收到请求才能开始挂载流程。
 
 </details>
@@ -217,6 +221,8 @@ spec:
     volumeHandle: juicefs-volume-abc
     ...
 ```
+
+为了防止此类错误的发生，建议开启 [Validating webhook](../guide/configurations.md#validating-webhook)。
 
 </details>
 

@@ -27,7 +27,7 @@ If you used `mount pod` mode, follow these steps to troubleshoot:
   # check kubelet rootdir in CSI Node
   kubectl -n kube-system get ds juicefs-csi-node -oyaml | grep csi.juicefs.com
   ```
-  
+
 * If `csi.juicefs.com` already exists in the above `csidrivers` list, that means CSI Driver is installed, the problem is with CSI Node, check its status:
   * Before troubleshooting, navigate to [check CSI Node](./troubleshooting.md#check-csi-node) to see a list of helpful commands;
   * A CSI Node Pod is expected on the node where the application Pod is running, if [scheduling strategy](../guide/resource-optimization.md#csi-node-node-selector) has been configured for the CSI Node DaemonSet, or the node itself is [tainted](https://kubernetes.io/docs/concepts/scheduling-eviction/taint-and-toleration), CSI Node may be missing on some worker nodes, causing the "driver not found" issue;
@@ -151,6 +151,10 @@ If the application Pod's event is:
   - Restarting kubelet
   - Upgrade Kubernetes
 
+  If your Kubernetes version is higher than these versions but you still encounter this issue, check whether the same Pod is mounting multiple PVs with the same volumeHandle, which can also cause the CSI to not receive requests normally. See [#91556](https://github.com/kubernetes/kubernetes/issues/91556) for details.
+
+  It is recommended that you enable the [validation webhook](./going-production.md#enable-validating-webhook) to ensure that this issue can be checked when creating PVs.
+
   In summary, JuiceFS CSI Driver needs to receive a request in order to start the mounting process.
 
 </details>
@@ -215,6 +219,8 @@ spec:
     volumeHandle: juicefs-volume-abc
     ...
 ```
+
+To prevent this sort of error from happening, [Validating webhook](../guide/configurations.md#validating-webhook) is recommended.
 
 </details>
 
